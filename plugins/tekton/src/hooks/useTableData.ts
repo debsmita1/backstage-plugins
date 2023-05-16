@@ -1,17 +1,21 @@
 import React from 'react';
 import { get } from 'lodash';
-import { SortByDirection } from '@patternfly/react-table';
 
 type UseTableDataProps<D = any> = {
   propData: D[];
   sortField?: string;
-  sortOrder?: SortByDirection;
+  sortOrder?: string;
 };
+
+export enum SortByDirection {
+  asc = 'asc',
+  desc = 'desc',
+}
 
 export const useTableData = ({
   propData,
   sortField = 'metadata.name',
-  sortOrder = SortByDirection.asc,
+  sortOrder = SortByDirection.desc,
 }: UseTableDataProps) => {
   return React.useMemo(() => {
     const getSortValue = (resource: any) => {

@@ -1,39 +1,71 @@
-import { sortable } from '@patternfly/react-table';
-import { tableColumnClasses } from './pipelinerun-table';
+import React from 'react';
+import { chart_color_green_400 as tektonGroupColor } from '@patternfly/react-tokens/dist/js/chart_color_green_400';
+import { Timestamp } from '@patternfly/react-core';
+import { TableColumn } from '@backstage/core-components';
+import ResourceBadge from './ResourceBadge';
+import PlrStatus from './PlrStatus';
+import LinkedPipelineRunTaskStatus from './LinkedPipelineRunTaskStatus';
+import { pipelineRunDuration } from '../../utils/tekton-utils';
+import { PipelineRunKind } from '../../types/pipelineRun';
 
-const PipelineRunHeader = () => {
-  return [
-    {
-      title: 'NAME',
-      sortField: 'metadata.name',
-      transforms: [sortable],
-      props: { className: tableColumnClasses[0] },
-    },
-    {
-      title: 'STATUS',
-      sortField: 'status.conditions[0].reason',
-      transforms: [sortable],
-      props: { className: tableColumnClasses[1] },
-    },
-    {
-      title: 'TASK STATUS',
-      sortField: 'status.conditions[0].reason',
-      transforms: [sortable],
-      props: { className: tableColumnClasses[2] },
-    },
-    {
-      title: 'STARTED',
-      sortField: 'status.startTime',
-      transforms: [sortable],
-      props: { className: tableColumnClasses[3] },
-    },
-    {
-      title: 'DURATION',
-      sortField: 'status.completionTime',
-      transforms: [sortable],
-      props: { className: tableColumnClasses[4] },
-    },
-  ];
-};
+import './PipelineRunHeader.css';
+import { SortByDirection } from '../../hooks/useTableData';
 
-export default PipelineRunHeader;
+export const PipelineRunHeader: TableColumn[] = [
+  {
+    id: 'name',
+    title: 'NAME',
+    field: 'metadata.name',
+    type: 'string',
+    render: (row): React.ReactNode => (
+      <ResourceBadge
+        color={tektonGroupColor.value}
+        abbr="PLR"
+        name={(row as PipelineRunKind)?.metadata?.name || ''}
+      />
+    ),
+  },
+  {
+    id: 'status',
+    title: 'STATUS',
+    field: 'status.conditions[0].reason',
+    type: 'string',
+    render: (row): React.ReactNode => (
+      <PlrStatus obj={row as PipelineRunKind} />
+    ),
+  },
+  {
+    id: 'task-status',
+    title: 'TASK STATUS',
+    field: 'status.conditions[0].reason',
+    type: 'string',
+    render: (row): React.ReactNode => (
+      <LinkedPipelineRunTaskStatus pipelineRun={row as PipelineRunKind} />
+    ),
+  },
+  {
+    id: 'start-time',
+    title: 'STARTED',
+    field: 'status.startTime',
+    type: 'string',
+    defaultSort: SortByDirection.desc,
+    render: (row): React.ReactNode => {
+      const startTime =
+        (row as PipelineRunKind)?.status?.startTime &&
+        new Date((row as PipelineRunKind)?.status?.startTime || '');
+      return startTime ? (
+        <Timestamp className="bs-tkn-timestamp" date={startTime} />
+      ) : (
+        '-'
+      );
+    },
+  },
+  {
+    id: 'duration',
+    title: 'DURATION',
+    field: 'status.completionTime',
+    type: 'string',
+    render: (row): React.ReactNode =>
+      pipelineRunDuration(row as PipelineRunKind),
+  },
+];

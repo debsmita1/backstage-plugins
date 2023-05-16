@@ -1,175 +1,233 @@
-import {
-  OnSelect,
-  Table as PfTable,
-  TableGridBreakpoint,
-  TableHeader,
-} from '@patternfly/react-table';
-import {
-  AutoSizer,
-  WindowScroller,
-} from '@patternfly/react-virtualized-extension';
-import { Scroll } from '@patternfly/react-virtualized-extension/dist/esm/components/Virtualized/types';
-import { findIndex } from 'lodash';
 import React from 'react';
-import { useTableData } from '../../hooks/useTableData';
-import { WithScrollContainer } from '../../utils/WithScrollContainer';
-import { VirtualBody } from './VirtualBody';
+import { findIndex } from 'lodash';
+import makeStyles from '@material-ui/core/styles/makeStyles';
+import { TableColumn } from '@backstage/core-components';
+import {
+  Table as MUITable,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TableBody,
+  Paper,
+  TableSortLabel,
+} from '@material-ui/core';
+import { TableVirtuoso, TableComponents } from 'react-virtuoso';
+import { BackstageTheme } from '@backstage/theme';
+import { SortByDirection, useTableData } from '../../hooks/useTableData';
 
-type HeaderFunc = () => any[];
-
-type TableProps<D = any, C = any> = Partial<D> & {
-  'aria-label': string;
-  header: HeaderFunc;
-  Row: React.FC<{ obj: any }>;
-  customData?: C;
-  expand?: boolean;
-  scrollElement?: HTMLElement | (() => HTMLElement);
-  getRowProps?: (obj: D) => {
-    id: React.ReactText;
-    title?: string;
-  };
-  onSelect?: OnSelect;
+const useStyles = makeStyles<BackstageTheme>(theme => ({
+  header: {
+    color: theme.palette.text.primary,
+  },
+}));
+type TableProps<D = any> = Partial<D> & {
+  tableData: any[];
+  columns: TableColumn[];
+  title?: string;
+  subTitle?: string;
+  defaultSortOrder: SortByDirection;
+  defaultSortField: string;
 };
 
 export const Table = ({
-  header,
-  Row,
-  customData,
-  expand,
-  getRowProps,
-  data: propData,
-  'aria-label': ariaLabel,
-  defaultSortField,
-  defaultSortOrder,
-  scrollElement,
-  gridBreakPoint = TableGridBreakpoint.none,
-  onSelect,
+  tableData,
+  columns,
+  defaultSortOrder = SortByDirection.asc,
+  defaultSortField = 'metadata.name',
 }: TableProps) => {
-  const [sortBy, setSortBy] = React.useState({});
+  const getColumnField = React.useCallback(
+    (id: string | undefined) =>
+      id
+        ? columns[
+            findIndex(columns, {
+              id,
+            })
+          ].field
+        : null,
+    [columns],
+  );
+  const getColumnFieldId = (field: string | undefined) =>
+    field
+      ? columns[
+          findIndex(columns, {
+            field,
+          })
+        ].id
+      : null;
+  const classes = useStyles();
+  const [fieldActive, setFieldActive] = React.useState(false);
   const [currentSortField, setCurrentSortField] =
     React.useState(defaultSortField);
+  const [currentSortFieldId, setCurrentSortFieldId] = React.useState(
+    getColumnFieldId(defaultSortField),
+  );
   const [currentSortOrder, setCurrentSortOrder] =
     React.useState(defaultSortOrder);
 
   const { data } = useTableData({
-    propData,
-    sortField: currentSortField,
+    propData: tableData,
+    sortField: getColumnField(currentSortFieldId as string) ?? currentSortField,
     sortOrder: currentSortOrder,
   });
-  const columns = header();
-  const ariaRowCount = data && data.length;
-  const scrollNode =
-    typeof scrollElement === 'function' ? scrollElement() : scrollElement;
-  const columnShift = onSelect ? 1 : 0;
-
-  React.useEffect(() => {
-    if (!sortBy) {
-      let newSortBy = {};
-      if (currentSortField && currentSortOrder) {
-        const columnIndex = findIndex(columns, {
-          sortField: currentSortField,
-        });
-        if (columnIndex > -1) {
-          newSortBy = {
-            index: columnIndex + columnShift,
-            direction: currentSortOrder,
-          };
-        }
-      }
-      setSortBy(newSortBy);
-    }
-  }, [columnShift, columns, currentSortField, currentSortOrder, sortBy]);
 
   const applySort = React.useCallback(
-    (sortField, _sortFunc, direction, _columnTitle) => {
-      setCurrentSortField?.(sortField);
+    (sortFieldId, direction) => {
+      setCurrentSortField?.(getColumnField(sortFieldId) || '');
       setCurrentSortOrder?.(direction);
+      setCurrentSortFieldId?.(sortFieldId);
+      setFieldActive?.(true);
     },
-    [setCurrentSortField, setCurrentSortOrder],
+    [
+      setCurrentSortField,
+      setCurrentSortOrder,
+      setCurrentSortFieldId,
+      setFieldActive,
+      getColumnField,
+    ],
   );
 
   const onSort = React.useCallback(
-    (event, index, direction) => {
+    (event, id) => {
       event.preventDefault();
-      const sortColumn = columns[index - columnShift];
-      applySort(
-        sortColumn.sortField,
-        sortColumn.sortFunc,
-        direction,
-        sortColumn.title,
-      );
-      setSortBy({
-        index,
-        direction,
-      });
+      const orderBy =
+        currentSortOrder === SortByDirection.asc
+          ? SortByDirection.desc
+          : SortByDirection.asc;
+      applySort(id, orderBy);
     },
-    [applySort, columnShift, columns],
+    [applySort, currentSortOrder],
   );
 
-  const renderVirtualizedTable = (
-    scrollContainer: Element | (Window & typeof globalThis) | undefined,
-  ) => (
-    <WindowScroller scrollElement={scrollContainer}>
-      {({
-        height,
-        isScrolling,
-        registerChild,
-        onChildScroll,
-        scrollTop,
-      }: {
-        height: number;
-        isScrolling: boolean;
-        registerChild: React.LegacyRef<HTMLDivElement> | undefined;
-        onChildScroll: (params: Scroll) => void;
-        scrollTop: number;
-      }) => (
-        <AutoSizer disableHeight>
-          {({ width }: { width: number }) => (
-            <div ref={registerChild}>
-              <VirtualBody
-                Row={Row}
-                customData={customData}
-                height={height}
-                isScrolling={isScrolling}
-                data={data}
-                columns={columns}
-                width={width}
-                expand={!!expand}
-                getRowProps={getRowProps}
-                onChildScroll={onChildScroll}
-                scrollTop={scrollTop}
-              />
-            </div>
+  const VirtuosoTableComponents: TableComponents = {
+    Scroller: React.forwardRef<HTMLDivElement>((props, ref) => (
+      <TableContainer component={Paper} {...props} ref={ref} />
+    )),
+    Table: props => {
+      return (
+        <MUITable
+          {...props}
+          style={{ borderCollapse: 'separate', tableLayout: 'fixed' }}
+        />
+      );
+    },
+    TableHead,
+    TableRow: ({ item: _item, ...props }) => <TableRow {...props} />,
+    TableBody: React.forwardRef<HTMLTableSectionElement>((props, ref) => {
+      return <TableBody {...props} ref={ref} />;
+    }),
+  };
+  const fixedHeaderContent = React.useCallback(
+    (props: any) => {
+      const { onRequestSort } = props;
+      const createSortHandler =
+        (property: any) => (event: React.MouseEvent<unknown>) => {
+          onRequestSort(event, property);
+        };
+      return (
+        <TableRow>
+          {columns.map(column => (
+            <TableCell
+              className={classes.header}
+              key={
+                (column?.id as React.Key) || `${column.field}-${column.title}}`
+              }
+              variant="head"
+              align="left"
+              style={{ width: column.width }}
+              sortDirection={currentSortOrder}
+            >
+              <TableSortLabel
+                active={fieldActive && currentSortFieldId === column.id}
+                direction={currentSortOrder}
+                onClick={createSortHandler(column.id)}
+              >
+                {column.title}
+              </TableSortLabel>
+            </TableCell>
+          ))}
+        </TableRow>
+      );
+    },
+    [
+      columns,
+      currentSortOrder,
+      currentSortFieldId,
+      classes.header,
+      fieldActive,
+    ],
+  );
+
+  type RowFunctionArgs = {
+    obj: any;
+  };
+
+  const RowMemo = React.memo<
+    RowFunctionArgs & { row: React.FC<RowFunctionArgs> | null }
+  >(({ row, ...props }) => {
+    return row ? row(props.obj) : null;
+  });
+
+  /* const rowContent = React.useCallback(
+    (_index: number, row: any) => {
+      return (
+        <>
+          {columns.map(column => {
+            return (
+              <TableCell
+                key={
+                  (column?.id as React.Key) ??
+                  `${column.field}-${column.title}}`
+                }
+                align="left"
+              >
+                {column?.render?.(row, 'row') ?? '-'}
+              </TableCell>
+            );
+          })}
+        </>
+      );
+    },
+    [columns],
+  ); */
+
+  const rowContent = React.useCallback(
+    (_index: number, row: any) => {
+      return (
+        <RowMemo
+          row={obj => (
+            <>
+              {columns.map(column => {
+                return (
+                  <TableCell
+                    key={
+                      (column?.id as React.Key) ??
+                      `${column.field}-${column.title}}`
+                    }
+                    align="left"
+                  >
+                    {column?.render?.(obj, 'row') ?? '-'}
+                  </TableCell>
+                );
+              })}
+            </>
           )}
-        </AutoSizer>
-      )}
-    </WindowScroller>
+          obj={row}
+        />
+      );
+    },
+    [columns, RowMemo],
   );
 
   return (
-    <div
-      aria-label={ariaLabel}
-      role="grid"
-      className="pf-c-scrollablegrid"
-      aria-rowcount={ariaRowCount}
-    >
-      <PfTable
-        cells={columns}
-        rows={[]}
-        gridBreakPoint={gridBreakPoint}
-        className="pf-m-border-rows"
-        role="presentation"
-        onSort={onSort}
-        onSelect={onSelect}
-        sortBy={sortBy}
-      >
-        <TableHeader role="rowgroup" />
-      </PfTable>
-      {scrollNode ? (
-        renderVirtualizedTable(scrollNode)
-      ) : (
-        <WithScrollContainer>{renderVirtualizedTable}</WithScrollContainer>
-      )}
-    </div>
+    <Paper style={{ height: 500 }}>
+      <TableVirtuoso
+        overscan={10}
+        data={data}
+        components={VirtuosoTableComponents}
+        fixedHeaderContent={() => fixedHeaderContent({ onRequestSort: onSort })}
+        itemContent={rowContent}
+      />
+    </Paper>
   );
 };

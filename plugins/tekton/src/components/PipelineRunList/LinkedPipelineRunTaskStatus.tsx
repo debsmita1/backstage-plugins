@@ -10,7 +10,7 @@ const LinkedPipelineRunTaskStatus = ({
   pipelineRun,
 }: LinkedPipelineRunTaskStatusProps) => {
   return (
-    <PipelineBars key={pipelineRun.metadata?.name} pipelinerun={pipelineRun} />
+    <PipelineBars key={pipelineRun?.metadata?.name} pipelinerun={pipelineRun} />
   );
 };
 
