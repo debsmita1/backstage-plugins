@@ -7,6 +7,7 @@ import { Table } from '../Table/Table';
 import { ClusterSelector, ErrorPanel } from '../common';
 import PipelineRunHeader from './PipelineRunHeader';
 import PipelineRunRow from './PipelineRunRow';
+import { useTektonResourcesWatcher } from '../Tekton/useTektonResourcesWatcher';
 
 type WrapperInfoCardProps = {
   allErrors?: ClusterErrors;
@@ -25,15 +26,18 @@ const WrapperInfoCard = ({
 );
 
 const PipelineRunList = () => {
-  const { loaded, responseError, watchResourcesData, selectedClusterErrors } =
-    React.useContext(TektonResourcesContext);
+  const { responseError, selectedClusterErrors } = React.useContext(
+    TektonResourcesContext,
+  );
+  const { loaded: pipelinesDataLoaded, pipelinesData } =
+    useTektonResourcesWatcher();
 
   const allErrors: ClusterErrors = [
     ...(responseError ? [{ message: responseError }] : []),
     ...(selectedClusterErrors ?? []),
   ];
 
-  if (!loaded && !responseError)
+  if (!pipelinesDataLoaded)
     return (
       <div data-testid="tekton-progress">
         <Progress />
@@ -41,9 +45,9 @@ const PipelineRunList = () => {
     );
 
   if (
-    loaded &&
+    pipelinesDataLoaded &&
     !responseError &&
-    !watchResourcesData?.pipelineruns?.data?.length
+    !pipelinesData?.pipelineruns?.data?.length
   ) {
     return (
       <WrapperInfoCard allErrors={allErrors}>
@@ -56,7 +60,7 @@ const PipelineRunList = () => {
     <WrapperInfoCard allErrors={allErrors}>
       <div style={{ overflow: 'scroll' }}>
         <Table
-          data={watchResourcesData?.pipelineruns?.data || []}
+          data={pipelinesData?.pipelineruns?.data || []}
           aria-label="PipelineRuns"
           header={PipelineRunHeader}
           Row={PipelineRunRow}

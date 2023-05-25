@@ -12,8 +12,7 @@ export const useAllWatchResources = (
   const [resources, setResources] = useState<TektonResponseData>({});
 
   useEffect(() => {
-    let isMounted = true;
-    if (isMounted && !loading && kubernetesObjects && !error) {
+    if (!loading && kubernetesObjects && !error) {
       const tektonResources: TektonResponseData = getTektonResources(
         cluster,
         kubernetesObjects,
@@ -22,9 +21,6 @@ export const useAllWatchResources = (
         setResources(tektonResources);
       }
     }
-    return () => {
-      isMounted = false;
-    };
   }, [loading, kubernetesObjects, error, cluster]);
 
   const watchResourcesData = watchedResource.reduce(

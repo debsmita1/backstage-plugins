@@ -17,6 +17,7 @@ import { pipelineRunStatus } from '../../utils/pipeline-filter-reducer';
 import { getGraphDataModel } from '../../utils/pipeline-topology-utils';
 import { getLatestPipelineRun } from '../../utils/pipelineRun-utils';
 import { ClusterSelector, ErrorPanel, ResourceStatus, Status } from '../common';
+import { useTektonResourcesWatcher } from '../Tekton/useTektonResourcesWatcher';
 import { PipelineLayout } from './PipelineLayout';
 
 import './PipelineVisualization.css';
@@ -53,8 +54,11 @@ export const PipelineVisualization = ({
   url,
 }: PipelineVisualizationProps) => {
   useDarkTheme();
-  const { loaded, responseError, watchResourcesData, selectedClusterErrors } =
-    React.useContext(TektonResourcesContext);
+  const { responseError, selectedClusterErrors } = React.useContext(
+    TektonResourcesContext,
+  );
+  const { loaded: pipelinesDataLoaded, pipelinesData } =
+    useTektonResourcesWatcher();
 
   const { entity } = useEntity();
   const allErrors: ClusterErrors = [
@@ -64,13 +68,13 @@ export const PipelineVisualization = ({
   const latestPipelineRun = React.useMemo(
     () =>
       getLatestPipelineRun(
-        watchResourcesData?.pipelineruns?.data ?? [],
+        pipelinesData?.pipelineruns?.data ?? [],
         'creationTimestamp',
       ),
-    [watchResourcesData],
+    [pipelinesData],
   );
 
-  if (!loaded)
+  if (!pipelinesDataLoaded)
     return (
       <div data-testid="tekton-progress">
         <Progress />
@@ -78,7 +82,7 @@ export const PipelineVisualization = ({
     );
 
   if (
-    loaded &&
+    pipelinesDataLoaded &&
     (!responseError || responseError?.length === 0) &&
     (!latestPipelineRun || isEmpty(latestPipelineRun))
   ) {
@@ -95,7 +99,7 @@ export const PipelineVisualization = ({
 
   const model = getGraphDataModel(
     latestPipelineRun ?? undefined,
-    watchResourcesData?.taskruns?.data ?? [],
+    pipelinesData?.taskruns?.data ?? [],
   );
 
   return (

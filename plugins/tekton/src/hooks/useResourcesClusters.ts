@@ -11,16 +11,12 @@ export const useResourcesClusters = (k8sObjectsResponse: KubernetesObjects) => {
   }>({ clusters: [], errors: [] });
 
   useEffect(() => {
-    let isMounted = true;
-    if (isMounted && !loading && kubernetesObjects && !error) {
+    if (!loading && kubernetesObjects && !error) {
       const k8sResourcesClusters = getClusters(kubernetesObjects);
       if (k8sResourcesClusters) {
         setClusters(k8sResourcesClusters);
       }
     }
-    return () => {
-      isMounted = false;
-    };
   }, [loading, kubernetesObjects, error]);
 
   return clusters;
