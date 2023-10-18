@@ -19,6 +19,9 @@ import { TechDocsAddons } from '@backstage/plugin-techdocs-react';
 
 import { ScalprumProvider } from '@scalprum/react-core';
 
+import { RbacPage } from '@janus-idp/backstage-plugin-rbac';
+import { policyEntityReadPermission } from '@janus-idp/backstage-plugin-rbac-common';
+
 import { apis } from './apis';
 import { entityPage } from './components/catalog/EntityPage';
 import { Root } from './components/Root';
@@ -54,6 +57,17 @@ export const AppBase = () => {
               </TechDocsAddons>
             </Route>
             <Route path="/api-docs" element={<ApiExplorerPage />} />
+            <Route
+              path="/rbac"
+              element={
+                <RequirePermission
+                  permission={policyEntityReadPermission}
+                  resourceRef="policy-entity"
+                >
+                  <RbacPage />
+                </RequirePermission>
+              }
+            />
             <Route
               path="/catalog-import"
               element={

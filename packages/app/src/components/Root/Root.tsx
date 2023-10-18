@@ -22,7 +22,10 @@ import LibraryBooks from '@material-ui/icons/LibraryBooks';
 import MenuIcon from '@material-ui/icons/Menu';
 import MapIcon from '@material-ui/icons/MyLocation';
 import SearchIcon from '@material-ui/icons/Search';
+import SupervisorAccount from '@material-ui/icons/SupervisorAccount';
 import { ScalprumComponent } from '@scalprum/react-core';
+
+import { Administration } from '@janus-idp/backstage-plugin-rbac';
 
 import LogoFull from './LogoFull';
 import LogoIcon from './LogoIcon';
@@ -77,6 +80,9 @@ export const Root = ({ children }: PropsWithChildren<{}>) => (
       </SidebarGroup>
       <SidebarSpace />
       <SidebarDivider />
+      <SidebarGroup label="Administration" icon={<SupervisorAccount />}>
+        <Administration />
+      </SidebarGroup>
       <SidebarGroup
         label="Settings"
         icon={

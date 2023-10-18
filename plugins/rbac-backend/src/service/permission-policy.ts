@@ -207,7 +207,7 @@ export class RBACPermissionPolicy implements PermissionPolicy {
       return false;
     }
 
-    const entityRef = identity.userEntityRef;
+    const entityRef = identity.userEntityRef; // user:default/debsmita1';
 
     return await this.enforcer.enforce(entityRef, resourceType, action);
   };
