@@ -5,23 +5,27 @@ import DownloadIcon from '@material-ui/icons/GetApp';
 
 import { downloadLogFile } from '@janus-idp/shared-react';
 
-type PodLogsDownloadProps = {
-  logText?: string;
+type TaskLogsDownloadProps = {
+  logText: string;
   fileName: string;
+  label: string;
 };
 
-const PodLogsDownload = ({ logText, fileName }: PodLogsDownloadProps) => {
+export const TaskLogsDownload = ({
+  logText,
+  fileName,
+  label,
+}: TaskLogsDownloadProps) => {
   return logText ? (
     <IconButton
-      aria-label="download logs"
+      aria-label={label.toLowerCase()}
       onClick={() => downloadLogFile(logText, `${fileName}.log`)}
       size="small"
       color="primary"
+      style={{ justifyContent: 'right' }}
     >
       <DownloadIcon fontSize="small" />
-      Download
+      {label}
     </IconButton>
   ) : null;
 };
-
-export default PodLogsDownload;

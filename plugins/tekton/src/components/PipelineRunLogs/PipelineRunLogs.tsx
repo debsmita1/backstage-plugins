@@ -96,7 +96,11 @@ export const PipelineRunLogs = ({
               <LogViewer text="No Logs found" />
             </Paper>
           ) : (
-            <PipelineRunLogViewer pod={podData as V1Pod} />
+            <PipelineRunLogViewer
+              pod={podData as V1Pod}
+              taskName={activeItem as string}
+              pipelineRun={pipelineRun.metadata?.name as string}
+            />
           )}
         </div>
       </Grid>

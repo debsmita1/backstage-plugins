@@ -1,6 +1,6 @@
 import { saveAs } from 'file-saver';
 
-import { downloadLogFile } from './pod-log-utils';
+import { downloadLogFile } from './download-log-file';
 
 jest.mock('file-saver', () => ({
   saveAs: jest.fn(),
