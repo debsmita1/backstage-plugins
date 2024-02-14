@@ -66,7 +66,7 @@ export const AddMembersForm = ({
 
   return (
     <>
-      <FormHelperText>
+      <FormHelperText style={{ color: '#ffffff' }}>
         Search and select users and groups to be added. Selected users and
         groups will appear in the members table.
       </FormHelperText>

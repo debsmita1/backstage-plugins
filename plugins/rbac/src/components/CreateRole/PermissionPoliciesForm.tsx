@@ -120,8 +120,8 @@ export const PermissionPoliciesForm = ({
     );
 
   return (
-    <div>
-      <FormHelperText>
+    <>
+      <FormHelperText style={{ color: '#ffffff' }}>
         Permission policies can be selected for each plugin. You can add
         multiple permission policies using +Add option.
       </FormHelperText>
@@ -183,6 +183,6 @@ export const PermissionPoliciesForm = ({
             </FormHelperText>
           </>
         )}
-    </div>
+    </>
   );
 };
