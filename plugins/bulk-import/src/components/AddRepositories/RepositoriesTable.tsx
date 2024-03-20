@@ -137,15 +137,6 @@ export const RepositoriesTable = ({
     showOrganizations,
   ]);
 
-  const handleRequestSort = (
-    _event: React.MouseEvent<unknown>,
-    property: string,
-  ) => {
-    const isAsc = orderBy === property && order === 'asc';
-    setOrder(isAsc ? 'desc' : 'asc');
-    setOrderBy(property);
-  };
-
   const filteredData = React.useMemo(() => {
     let filteredRows = tableData;
 
@@ -160,6 +151,15 @@ export const RepositoriesTable = ({
 
     return filteredRows;
   }, [tableData, searchString, order, orderBy]);
+
+  const handleRequestSort = (
+    _event: React.MouseEvent<unknown>,
+    property: string,
+  ) => {
+    const isAsc = orderBy === property && order === 'asc';
+    setOrder(isAsc ? 'desc' : 'asc');
+    setOrderBy(property);
+  };
 
   const updateFieldValue = React.useCallback(
     (data: AddRepositoriesData[], newSelected: number[], repoType?: string) => {
