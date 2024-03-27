@@ -38,7 +38,8 @@
     "prepack": "backstage-cli package prepack",
     "start": "LEGACY_BACKEND_START=true backstage-cli package start",
     "test": "backstage-cli package test --passWithNoTests --coverage",
-    "tsc": "tsc"
+    "tsc": "tsc",
+    "openapi": "./scripts/openapi.sh"
   },
   "dependencies": {
     "@backstage/backend-app-api": "^0.5.13",

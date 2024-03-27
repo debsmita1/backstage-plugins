@@ -27,8 +27,12 @@ import {
 import { createPermissionIntegrationRouter } from '@backstage/plugin-permission-node';
 
 // import { bulkImportPermission } from '@janus-idp/backstage-plugin-bulk-import-common';
+import { fullFormats } from 'ajv-formats/dist/formats';
 import express from 'express';
 import Router from 'express-promise-router';
+import { Context, OpenAPIBackend, Request } from 'openapi-backend';
+import { Paths } from '../openapi';
+import { openApiDocument } from '../openapidocument';
 import gitUrlParse from 'git-url-parse';
 import { Logger } from 'winston';
 
@@ -36,6 +40,9 @@ import crypto from 'crypto';
 
 import { CatalogInfoGenerator } from '../helpers/catalogInfoGenerator';
 import { GithubApiService } from './githubApiService';
+import { ping } from "./handlers/ping";
+import { findAllRepositories} from "./handlers/repositories";
+import {createImportJobs, findAllImports} from "./handlers/imports";
 
 // TODO: Remove this when done to use the @janus-idp/backstage-plugin-bulk-import-common import instead
 /** This permission is used to access the bulk-import endpoints
@@ -82,6 +89,74 @@ export async function createRouter(
   const githubApiService = new GithubApiService(logger, config);
   const catalogInfoGenerator = new CatalogInfoGenerator(logger, catalogApi);
 
+  // create openapi requests handler
+  const api = new OpenAPIBackend({
+    ajvOpts: {
+      formats: fullFormats, // open issue: https://github.com/openapistack/openapi-backend/issues/280
+    },
+    validate: true,
+    definition: openApiDocument,
+  });
+
+  await api.init();
+
+  api.register(
+      'ping',
+      (
+          _c: Context,
+          _req: express.Request,
+          res: express.Response,
+      ) => ping(logger).then(result => res.json(result)),
+  );
+
+  api.register(
+      'findAllRepositories',
+      async (
+          _c: Context,
+          req: express.Request,
+          res: express.Response,
+      ) => {
+        const backstageToken = getBearerTokenFromAuthorizationHeader(
+            req.header('authorization'),
+        );
+        await permissionCheck(permissions, backstageToken);
+        const repos = await findAllRepositories(logger);
+        return res.json(repos);
+      },
+  );
+
+  api.register(
+      'findAllImports',
+      async (
+          _c: Context,
+          req: express.Request,
+          res: express.Response,
+      ) => {
+        const backstageToken = getBearerTokenFromAuthorizationHeader(
+            req.header('authorization'),
+        );
+        await permissionCheck(permissions, backstageToken);
+        const imports = await findAllImports(logger);
+        return res.json(imports);
+      },
+  );
+
+  api.register(
+      'createImportJobs',
+      async (
+          c: Context<Paths.CreateImportJobs.RequestBody>,
+          req: express.Request,
+          res: express.Response,
+      ) => {
+        const backstageToken = getBearerTokenFromAuthorizationHeader(
+            req.header('authorization'),
+        );
+        await permissionCheck(permissions, backstageToken);
+        const imports = await createImportJobs(logger, c.request.requestBody);
+        return res.json(imports);
+      },
+  );
+
   const router = Router();
   router.use(express.json());
 
@@ -89,6 +164,19 @@ export async function createRouter(
     permissions: [bulkImportPermission],
   });
   router.use(permissionIntegrationRouter);
+
+  router.use((req, res, next) => {
+    if (!next) {
+      throw new Error('next is undefined');
+    }
+    const validation = api.validateRequest(req as Request);
+    if (!validation.valid) {
+      res.status(500).json({ status: 500, err: validation.errors });
+      return;
+    }
+
+    api.handleRequest(req as Request, req, res).catch(next);
+  });
 
   async function verifyLocationExistence(
     repo_catalog_url: string,
@@ -106,101 +194,101 @@ export async function createRouter(
     return result.exists as boolean;
   }
 
-  router.get('/health', (_, res) => {
-    logger.info('PONG!');
-    res.json({ status: 'ok' });
-  });
-
-  // Using a POST instead of a GET with a param here because the `owner` field is expected to be a URL
-  router.post('/repositories', async (req, res) => {
-    const {
-      body: { owner },
-    } = req;
-    let parsed: gitUrlParse.GitUrl;
-    const backstageToken = getBearerTokenFromAuthorizationHeader(
-      req.header('authorization'),
-    );
-    await permissionCheck(permissions, backstageToken);
-
-    if (!owner) {
-      res.status(400).send({
-        error:
-          'No owner field provided. Please provide a valid github URL to the user or organization.',
-      });
-      return;
-    }
-    try {
-      parsed = gitUrlParse(owner);
-    } catch {
-      res.status(400).send({
-        error:
-          'Invalid owner field provided. Please provide a valid github URL to the user or organization.',
-      });
-      return;
-    }
-    const response = await githubApiService.getGithubRepositories(parsed);
-
-    const batchBulkImportUUID = crypto.randomUUID();
-    /**
-     * Check if corresponding repository already has an existing catalog location
-     * Assumes that the catalog file is located in the root directory of the default_branch
-     * Generates a Component entity and Location entity by default if repo doesn't exist already in the catalog
-     */
-    const modifiedResponse = {
-      ...response,
-      repositories: await Promise.all(
-        response.repositories.map(async repo => {
-          const catalogUrl = `${repo.html_url}/blob/${repo.default_branch}/catalog-info.yaml`;
-          const repoExists = await verifyLocationExistence(
-            catalogUrl,
-            backstageToken,
-          );
-          if (!repoExists) {
-            const entities =
-              await catalogInfoGenerator.createCatalogInfoGenerator({
-                repoInfo: repo,
-                backstageToken,
-                bulkImportUUID: batchBulkImportUUID,
-              });
-            return {
-              ...repo,
-              locationEntity: entities.locationEntity,
-              entity: entities.entity,
-            };
-          }
-          return {
-            ...repo,
-            exists: repoExists,
-          };
-        }),
-      ),
-    };
-
-    if (
-      modifiedResponse.errors.length === 0 &&
-      modifiedResponse.repositories.length === 0
-    ) {
-      res.status(404).json(modifiedResponse);
-    } else if (response.errors.length === 0) {
-      res.status(200).json(modifiedResponse);
-    } else {
-      // Return 207 since there is a variety of errors and potentially some partial successes
-      res.status(207).json(modifiedResponse);
-    }
-  });
-  router.post('/edit-catalog-info', async (req, res) => {
-    const {
-      body: { entityRef },
-    } = req;
-
-    const backstageToken = getBearerTokenFromAuthorizationHeader(
-      req.header('authorization'),
-    );
-    await permissionCheck(permissions, backstageToken);
-    // TODO: add catalog-info editing endpoint
-    res.json(entityRef);
-  });
-
+  // router.get('/health', (_, res) => {
+  //   logger.info('PONG!');
+  //   res.json({ status: 'ok' });
+  // });
+  //
+  // // Using a POST instead of a GET with a param here because the `owner` field is expected to be a URL
+  // router.post('/repositories', async (req, res) => {
+  //   const {
+  //     body: { owner },
+  //   } = req;
+  //   let parsed: gitUrlParse.GitUrl;
+  //   const backstageToken = getBearerTokenFromAuthorizationHeader(
+  //     req.header('authorization'),
+  //   );
+  //   await permissionCheck(permissions, backstageToken);
+  //
+  //   if (!owner) {
+  //     res.status(400).send({
+  //       error:
+  //         'No owner field provided. Please provide a valid github URL to the user or organization.',
+  //     });
+  //     return;
+  //   }
+  //   try {
+  //     parsed = gitUrlParse(owner);
+  //   } catch {
+  //     res.status(400).send({
+  //       error:
+  //         'Invalid owner field provided. Please provide a valid github URL to the user or organization.',
+  //     });
+  //     return;
+  //   }
+  //   const response = await githubApiService.getGithubRepositories(parsed);
+  //
+  //   const batchBulkImportUUID = crypto.randomUUID();
+  //   /**
+  //    * Check if corresponding repository already has an existing catalog location
+  //    * Assumes that the catalog file is located in the root directory of the default_branch
+  //    * Generates a Component entity and Location entity by default if repo doesn't exist already in the catalog
+  //    */
+  //   const modifiedResponse = {
+  //     ...response,
+  //     repositories: await Promise.all(
+  //       response.repositories.map(async repo => {
+  //         const catalogUrl = `${repo.html_url}/blob/${repo.default_branch}/catalog-info.yaml`;
+  //         const repoExists = await verifyLocationExistence(
+  //           catalogUrl,
+  //           backstageToken,
+  //         );
+  //         if (!repoExists) {
+  //           const entities =
+  //             await catalogInfoGenerator.createCatalogInfoGenerator({
+  //               repoInfo: repo,
+  //               backstageToken,
+  //               bulkImportUUID: batchBulkImportUUID,
+  //             });
+  //           return {
+  //             ...repo,
+  //             locationEntity: entities.locationEntity,
+  //             entity: entities.entity,
+  //           };
+  //         }
+  //         return {
+  //           ...repo,
+  //           exists: repoExists,
+  //         };
+  //       }),
+  //     ),
+  //   };
+  //
+  //   if (
+  //     modifiedResponse.errors.length === 0 &&
+  //     modifiedResponse.repositories.length === 0
+  //   ) {
+  //     res.status(404).json(modifiedResponse);
+  //   } else if (response.errors.length === 0) {
+  //     res.status(200).json(modifiedResponse);
+  //   } else {
+  //     // Return 207 since there is a variety of errors and potentially some partial successes
+  //     res.status(207).json(modifiedResponse);
+  //   }
+  // });
+  // router.post('/edit-catalog-info', async (req, res) => {
+  //   const {
+  //     body: { entityRef },
+  //   } = req;
+  //
+  //   const backstageToken = getBearerTokenFromAuthorizationHeader(
+  //     req.header('authorization'),
+  //   );
+  //   await permissionCheck(permissions, backstageToken);
+  //   // TODO: add catalog-info editing endpoint
+  //   res.json(entityRef);
+  // });
+  //
   router.use(errorHandler());
 
   return router;
