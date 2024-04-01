@@ -2,8 +2,6 @@
 
 This plugin allows bulk import of multiple catalog entities into the catalog.
 
-## For administrators
-
 ---
 
 **NOTE**
@@ -11,6 +9,8 @@ This plugin allows bulk import of multiple catalog entities into the catalog.
 The plugin work is still work in progress
 
 ---
+
+## For administrators
 
 ### Installation
 
