@@ -99,6 +99,9 @@ export async function startStandaloneServer(
     discovery,
     tokenManager,
   });
+  const identity = DefaultIdentityClient.create({
+    discovery,
+  });
 
   const createEnv = makeCreateEnv(config);
   const catalogEnv = useHotMemoize(module, () => createEnv('catalog'));
@@ -114,7 +117,9 @@ export async function startStandaloneServer(
   const router = await createRouter({
     config,
     logger,
+    discovery,
     permissions,
+    identity,
     catalogApi: options.catalogApi,
   });
 

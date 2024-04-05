@@ -109,7 +109,7 @@ export function isGithubAppCredential(
 export interface ExtendedGithubCredentialsProvider
   extends GithubCredentialsProvider {
   getAllCredentials: (options: {
-    url: string;
+    host: string;
   }) => Promise<ExtendedGithubCredentials[]>;
 }
 

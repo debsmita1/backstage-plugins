@@ -4,7 +4,7 @@ import type {
   UnknownParamsObject,
   OperationResponse,
   AxiosRequestConfig,
-} from 'openapi-client-axios'; 
+} from 'openapi-client-axios';
 
 declare namespace Components {
     namespace Schemas {
@@ -40,6 +40,10 @@ declare namespace Components {
                      * URL of the Pull Request
                      */
                     url?: string;
+                    /**
+                     * Pull Request number
+                     */
+                    number?: number;
                 };
             };
         }
@@ -48,7 +52,7 @@ declare namespace Components {
          */
         export interface ImportRequest {
             approvalTool?: ApprovalTool;
-            repository?: {
+            repository: {
                 /**
                  * repository name
                  */
@@ -56,11 +60,15 @@ declare namespace Components {
                 /**
                  * repository URL
                  */
-                url?: string;
+                url: string;
                 /**
                  * organization which the repository is part of
                  */
                 organization?: string;
+                /**
+                 * default branch
+                 */
+                defaultBranch?: string;
             };
             /**
              * content of the catalog-info.yaml to include in the import Pull Request.
@@ -88,7 +96,7 @@ declare namespace Components {
         /**
          * Import Job status
          */
-        export type ImportStatus = "WAIT_APPROVAL" | "ADDED" | "WAIT_PR_START" | "WAIT_PR_APPROVAL" | "PR_REJECTED" | "WAIT_SERVICENOW_START" | "WAIT_SERVICENOW_RESOLUTION" | "PR_ERROR" | "SERVICENOW_ERROR" | "SERVICENOW_TICKET_REJECTED" | null;
+        export type ImportStatus = "ADDED" | "WAIT_PR_APPROVAL" | "PR_ERROR" | null;
         /**
          * Repository
          */
@@ -109,11 +117,11 @@ declare namespace Components {
              * organization which the repository is part of
              */
             organization?: string;
-            /**
-             * base content of the catalog-info.yaml to include in the import Pull Request.
-             */
-            defaultCatalogInfo?: string;
             importStatus?: /* Import Job status */ ImportStatus;
+            /**
+             * default branch
+             */
+            defaultBranch?: string;
         }
     }
 }
@@ -127,11 +135,15 @@ declare namespace Paths {
     namespace FindAllImports {
         namespace Responses {
             export type $200 = /* Import Job */ Components.Schemas.Import[];
+            export interface $500 {
+            }
         }
     }
     namespace FindAllRepositories {
         namespace Responses {
             export type $200 = /* Repository */ Components.Schemas.Repository[];
+            export interface $500 {
+            }
         }
     }
     namespace Ping {
@@ -220,3 +232,4 @@ export interface PathsDictionary {
 }
 
 export type Client = OpenAPIClient<OperationMethods, PathsDictionary>
+

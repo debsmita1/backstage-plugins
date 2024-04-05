@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-import { errorHandler } from '@backstage/backend-common';
+import { errorHandler,
+  PluginEndpointDiscovery, } from '@backstage/backend-common';
 import { CatalogApi } from '@backstage/catalog-client';
 import { Config } from '@backstage/config';
 import { NotAllowedError } from '@backstage/errors';
-import { getBearerTokenFromAuthorizationHeader } from '@backstage/plugin-auth-node';
+import { IdentityApi, getBearerTokenFromAuthorizationHeader } from '@backstage/plugin-auth-node';
 import {
   AuthorizeResult,
   createPermission,
@@ -42,7 +43,7 @@ import { CatalogInfoGenerator } from '../helpers/catalogInfoGenerator';
 import { GithubApiService } from './githubApiService';
 import { ping } from "./handlers/ping";
 import { findAllRepositories} from "./handlers/repositories";
-import {createImportJobs, findAllImports} from "./handlers/imports";
+import {createImportJobs, findAllImports} from "./handlers/bulkImports";
 
 // TODO: Remove this when done to use the @janus-idp/backstage-plugin-bulk-import-common import instead
 /** This permission is used to access the bulk-import endpoints
@@ -58,6 +59,8 @@ export interface RouterOptions {
   logger: Logger;
   permissions: PermissionEvaluator;
   config: Config;
+  discovery: PluginEndpointDiscovery;
+  identity: IdentityApi;
   catalogApi: CatalogApi;
 }
 
@@ -84,10 +87,10 @@ async function permissionCheck(
 export async function createRouter(
   options: RouterOptions,
 ): Promise<express.Router> {
-  const { logger, permissions, config, catalogApi } = options;
+  const { logger, permissions, config, discovery, identity, catalogApi } = options;
 
   const githubApiService = new GithubApiService(logger, config);
-  const catalogInfoGenerator = new CatalogInfoGenerator(logger, catalogApi);
+  const catalogInfoGenerator = new CatalogInfoGenerator(logger, discovery);
 
   // create openapi requests handler
   const api = new OpenAPIBackend({
@@ -120,7 +123,7 @@ export async function createRouter(
             req.header('authorization'),
         );
         await permissionCheck(permissions, backstageToken);
-        const repos = await findAllRepositories(logger);
+        const repos = await findAllRepositories(logger, githubApiService, catalogApi, catalogInfoGenerator, true);
         return res.json(repos);
       },
   );
@@ -136,7 +139,7 @@ export async function createRouter(
             req.header('authorization'),
         );
         await permissionCheck(permissions, backstageToken);
-        const imports = await findAllImports(logger);
+        const imports = await findAllImports(logger, githubApiService, catalogApi, catalogInfoGenerator);
         return res.json(imports);
       },
   );
@@ -152,7 +155,7 @@ export async function createRouter(
             req.header('authorization'),
         );
         await permissionCheck(permissions, backstageToken);
-        const imports = await createImportJobs(logger, c.request.requestBody);
+        const imports = await createImportJobs(logger, config, catalogApi, githubApiService, catalogInfoGenerator, c.request.requestBody);
         return res.json(imports);
       },
   );
@@ -177,22 +180,6 @@ export async function createRouter(
 
     api.handleRequest(req as Request, req, res).catch(next);
   });
-
-  async function verifyLocationExistence(
-    repo_catalog_url: string,
-    backstage_token?: string,
-  ): Promise<boolean> {
-    const result = await options.catalogApi.addLocation(
-      {
-        type: 'url',
-        target: repo_catalog_url,
-        dryRun: true,
-      },
-      { token: backstage_token },
-    );
-    // The `result.exists` field is only filled in dryRun mode
-    return result.exists as boolean;
-  }
 
   // router.get('/health', (_, res) => {
   //   logger.info('PONG!');

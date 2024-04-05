@@ -2,7 +2,7 @@
 pwd
 set -ex
 
-npx --yes --package=openapicmd@2.3.1 -- typegen src/schema/openapi.yaml > src/openapi.d.ts
+npx --yes --package=openapicmd@2.3.2 -- openapi typegen ./src/schema/openapi.yaml > ./src/openapi.d.ts
 
 npx --yes --package=js-yaml-cli@0.6.0 -- yaml2json -f ./src/schema/openapi.yaml
 

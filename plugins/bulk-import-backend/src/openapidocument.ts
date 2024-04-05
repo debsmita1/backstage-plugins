@@ -69,6 +69,9 @@ const OPENAPI = `
                 }
               }
             }
+          },
+          "500": {
+            "description": "Generic error"
           }
         }
       }
@@ -103,6 +106,9 @@ const OPENAPI = `
                 }
               }
             }
+          },
+          "500": {
+            "description": "Generic error"
           }
         }
       },
@@ -181,12 +187,12 @@ const OPENAPI = `
             "type": "string",
             "description": "organization which the repository is part of"
           },
-          "defaultCatalogInfo": {
-            "type": "string",
-            "description": "base content of the catalog-info.yaml to include in the import Pull Request."
-          },
           "importStatus": {
             "$ref": "#/components/schemas/ImportStatus"
+          },
+          "defaultBranch": {
+            "type": "string",
+            "description": "default branch"
           }
         }
       },
@@ -202,16 +208,9 @@ const OPENAPI = `
         "nullable": true,
         "description": "Import Job status",
         "enum": [
-          "WAIT_APPROVAL",
           "ADDED",
-          "WAIT_PR_START",
           "WAIT_PR_APPROVAL",
-          "PR_REJECTED",
-          "WAIT_SERVICENOW_START",
-          "WAIT_SERVICENOW_RESOLUTION",
           "PR_ERROR",
-          "SERVICENOW_ERROR",
-          "SERVICENOW_TICKET_REJECTED",
           null
         ]
       },
@@ -261,6 +260,10 @@ const OPENAPI = `
                   "url": {
                     "type": "string",
                     "description": "URL of the Pull Request"
+                  },
+                  "number": {
+                    "type": "number",
+                    "description": "Pull Request number"
                   }
                 }
               }
@@ -271,12 +274,18 @@ const OPENAPI = `
       "ImportRequest": {
         "title": "Import Job request",
         "type": "object",
+        "required": [
+          "repository"
+        ],
         "properties": {
           "approvalTool": {
             "$ref": "#/components/schemas/ApprovalTool"
           },
           "repository": {
             "type": "object",
+            "required": [
+              "url"
+            ],
             "properties": {
               "name": {
                 "type": "string",
@@ -289,6 +298,10 @@ const OPENAPI = `
               "organization": {
                 "type": "string",
                 "description": "organization which the repository is part of"
+              },
+              "defaultBranch": {
+                "type": "string",
+                "description": "default branch"
               }
             }
           },
@@ -335,24 +348,24 @@ const OPENAPI = `
             "id": "unique-id-1",
             "name": "pet-app",
             "url": "https://github.com/my-org/pet-app",
-            "organization": "https://github.com/my-org",
+            "organization": "my-org",
             "importStatus": "WAIT_PR_APPROVAL",
-            "defaultCatalogInfo": "apiVersion: backstage.io/v1alpha1\\nkind: Component\\nmetadata:\\n  name: pet-app\\n  annotations:\\n    github.com/project-slug: my-org/pet-app\\nspec:\\n  type: other\\n  lifecycle: unknown\\n  owner: my-org"
+            "defaultBranch": "main"
           },
           {
             "id": "unique-id-2",
             "name": "project-zero",
             "url": "https://ghe.example.com/my-other-org/project-zero",
-            "organization": "https://ghe.example.com/my-other-org",
+            "organization": "my-other-org",
             "importStatus": "PR_REJECTED",
-            "defaultCatalogInfo": "apiVersion: backstage.io/v1alpha1\\nkind: Component\\nmetadata:\\n  name: project-zero\\n  annotations:\\n    github.com/project-slug: my-other-org/project-zero\\nspec:\\n  type: other\\n  lifecycle: unknown\\n  owner: my-other-org"
+            "defaultBranch": "dev"
           },
           {
             "id": "unique-id-2",
             "name": "project-one",
+            "defaultBranch": "trunk",
             "url": "https://ghe.example.com/my-other-org-2/project-one",
-            "organization": "https://ghe.example.com/my-other-org-2",
-            "defaultCatalogInfo": "apiVersion: backstage.io/v1alpha1\\nkind: Component\\nmetadata:\\n  name: project-one\\n  annotations:\\n    github.com/project-slug: my-other-org-2/project-one\\nspec:\\n  type: other\\n  lifecycle: unknown\\n  owner: my-other-org-2"
+            "organization": "my-other-org-2"
           }
         ]
       },
@@ -368,11 +381,12 @@ const OPENAPI = `
             "repository": {
               "name": "pet-app",
               "url": "https://github.com/my-org/pet-app",
-              "organization": "https://github.com/my-org"
+              "organization": "my-org"
             },
             "github": {
               "pullRequest": {
-                "url": "https://github.com/my-org/pet-app/pull/1"
+                "url": "https://github.com/my-org/pet-app/pull/1",
+                "number": 1
               }
             }
           },
@@ -385,11 +399,12 @@ const OPENAPI = `
             "repository": {
               "name": "pet-app-test",
               "url": "https://github.com/my-org/pet-app-test",
-              "organization": "https://github.com/my-org"
+              "organization": "my-org"
             },
             "github": {
               "pullRequest": {
-                "url": "https://github.com/my-org/pet-app-test/pull/10"
+                "url": "https://github.com/my-org/pet-app-test/pull/10",
+                "number": 10
               }
             }
           }
@@ -403,7 +418,8 @@ const OPENAPI = `
             "repository": {
               "name": "pet-app",
               "url": "https://github.com/my-org/pet-app",
-              "organization": "https://github.com/my-org"
+              "organization": "my-org",
+              "defaultBranch": "main"
             },
             "github": {
               "pullRequest": {
@@ -416,7 +432,8 @@ const OPENAPI = `
             "repository": {
               "name": "project-zero",
               "url": "https://ghe.example.com/my-other-org/project-zero",
-              "organization": "https://ghe.example.com/my-other-org"
+              "organization": "my-other-org",
+              "defaultBranch": "dev"
             },
             "github": {
               "pullRequest": {
