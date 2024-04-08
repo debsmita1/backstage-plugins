@@ -12,9 +12,13 @@ import {
 } from '../../utils/repository-utils';
 
 export const OrganizationTableRow = ({
+  onOrgRowSelected,
   data,
+  alreadyAdded,
 }: {
+  onOrgRowSelected: (org: AddRepositoriesData) => void;
   data: AddRepositoriesData;
+  alreadyAdded: number;
 }) => {
   return (
     <TableRow hover>
@@ -25,9 +29,11 @@ export const OrganizationTableRow = ({
         <Link to={data.url}>{data.url}</Link>
       </TableCell>
       <TableCell align="left">
-        <>{getSelectedRepositories(data.selectedRepositories)}</>
+        {getSelectedRepositories(onOrgRowSelected, data)}
       </TableCell>
-      <TableCell align="left">{getRepositoryStatusForOrg(data)}</TableCell>
+      <TableCell align="left">
+        {getRepositoryStatusForOrg(data, alreadyAdded)}
+      </TableCell>
     </TableRow>
   );
 };
