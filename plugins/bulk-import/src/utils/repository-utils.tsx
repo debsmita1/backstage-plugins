@@ -33,12 +33,24 @@ export const getRepositoryStatus = (
   return <span>Not generated</span>;
 };
 
-export const getRepositoryStatusForOrg = (data: AddRepositoriesData) => {
-  if (data.selectedRepositories && data.selectedRepositories > 0) {
-    return getRepositoryStatus(data.catalogInfoYaml.status);
+export const getRepositoryStatusForOrg = (
+  data: AddRepositoriesData,
+  alreadyAdded: number,
+) => {
+  const isSelected = data.selectedRepositories && data.selectedRepositories > 0;
+  const allSelected =
+    (data.selectedRepositories || 0) + alreadyAdded ===
+    data.repositories?.length;
+
+  if (!isSelected) {
+    return <span>Not generated</span>;
   }
 
-  return <span>Not generated</span>;
+  if (allSelected) {
+    return getRepositoryStatus('Exists', true);
+  }
+
+  return <span>{`${data.selectedRepositories} `}Ready</span>;
 };
 
 const descendingComparator = (
@@ -88,12 +100,29 @@ export const createData = (
   };
 };
 
-export const getSelectedRepositories = (repositories: number | undefined) => {
-  if (!repositories || repositories === 0) {
+export const createOrganizationData = (
+  id: number,
+  name: string,
+  url: string,
+  repositories: AddRepositoriesData[],
+): AddRepositoriesData => {
+  return {
+    id,
+    name,
+    url,
+    repositories,
+  };
+};
+
+export const getSelectedRepositories = (
+  onOrgRowSelected: (org: AddRepositoriesData) => void,
+  organizationData: AddRepositoriesData,
+) => {
+  if (!organizationData || organizationData.selectedRepositories === 0) {
     return (
       <>
         None{' '}
-        <Link onClick={() => {}} to="">
+        <Link to="" onClick={() => onOrgRowSelected(organizationData)}>
           Select
         </Link>
       </>
@@ -101,8 +130,8 @@ export const getSelectedRepositories = (repositories: number | undefined) => {
   }
   return (
     <>
-      {repositories}{' '}
-      <Link onClick={() => {}} to="">
+      {organizationData.selectedRepositories}{' '}
+      <Link onClick={() => onOrgRowSelected(organizationData)} to="">
         Edit
       </Link>
     </>
@@ -124,13 +153,13 @@ export const getNewSelectedRepositories = (
 };
 
 export const getRepositoriesSelected = (data: AddRepositoriesFormValues) => {
-  if (data.repositoryType === 'repository') {
-    return data.repositories?.length || 0;
-  }
-  return (
-    data.organizations?.reduce((acc, org) => {
-      const repos = acc + (org.selectedRepositories || 0);
-      return repos;
-    }, 0) || 0
-  );
+  return data.repositories?.length || 0;
+  // if (data.repositoryType === 'repository') {
+  // }
+  // return (
+  //   data.organizations?.reduce((acc, org) => {
+  //     const repos = acc + (org.selectedRepositories as number) || 0;
+  //     return repos;
+  //   }, 0) || 0
+  // );
 };
