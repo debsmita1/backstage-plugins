@@ -16,8 +16,8 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 
 import { AddRepositoriesData, AddRepositoriesFormValues } from '../../types';
 import { urlHelper } from '../../utils/repository-utils';
-import { AddRepositoriesTableToolbar } from './AddRepositoriesTableToolbar';
 import { RepositoriesTable } from './RepositoriesTable';
+import { AddRepositoriesTableToolbar } from './AddRepositoriesTableToolbar';
 
 type AddRepositoriesDrawerProps = {
   open: boolean;
