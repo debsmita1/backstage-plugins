@@ -364,6 +364,22 @@ export const RepositoriesTable = ({
     },
     [reposData, updateFieldValue, orgsData, setOrgsData, setSelected],
   );
+  const selectedForActiveDrawer = React.useMemo(
+    () =>
+      filterSelectedForActiveDrawer(
+        drawerOrganization?.repositories || [],
+        selected,
+      ),
+    [drawerOrganization?.repositories, selected],
+  );
+
+  const getRowCount = () => {
+    if (drawerOrganization) {
+      return orgReposData.filter(r => r.catalogInfoYaml?.status !== 'Exists')
+        .length;
+    }
+    return tableData.length;
+  };
 
   const selectedForActiveDrawer = React.useMemo(
     () =>
