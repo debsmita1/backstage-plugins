@@ -4,7 +4,12 @@ import { Navigate, Route } from 'react-router';
 import { FlatRoutes } from '@backstage/core-app-api';
 import { AlertDisplay, OAuthRequestDialog } from '@backstage/core-components';
 import { ApiExplorerPage } from '@backstage/plugin-api-docs';
-import { CatalogEntityPage, CatalogIndexPage } from '@backstage/plugin-catalog';
+import {
+  CatalogEntityPage,
+  CatalogIndexPage,
+  CatalogTable,
+  CatalogTableColumnsFunc,
+} from '@backstage/plugin-catalog';
 import { catalogEntityCreatePermission } from '@backstage/plugin-catalog-common/alpha';
 import { CatalogGraphPage } from '@backstage/plugin-catalog-graph';
 import { CatalogImportPage } from '@backstage/plugin-catalog-import';
@@ -19,6 +24,9 @@ import { TechDocsAddons } from '@backstage/plugin-techdocs-react';
 
 import { ScalprumProvider } from '@scalprum/react-core';
 
+import { BulkImportPage } from '@janus-idp/backstage-plugin-bulk-import';
+import { RbacPage } from '@janus-idp/backstage-plugin-rbac';
+
 import { apis } from './apis';
 import { entityPage } from './components/catalog/EntityPage';
 import { Root } from './components/Root';
@@ -29,6 +37,21 @@ import DynamicRootContext from './DynamicRoot/DynamicRootContext';
 export const AppBase = () => {
   const { AppProvider, AppRouter, dynamicRoutes } =
     useContext(DynamicRootContext);
+
+  const myCustomColumnsFunc: CatalogTableColumnsFunc = entityListContext => {
+    console.log('!!!!entityListContext ', entityListContext);
+    if (entityListContext.filters.kind?.value === 'component') {
+      return [
+        ...CatalogTable.defaultColumnsFunc(entityListContext),
+        {
+          title: 'Created At',
+          field: 'entity.metadata.annotations[backstage.io/createdAt]',
+        },
+      ];
+    }
+
+    return CatalogTable.defaultColumnsFunc(entityListContext);
+  };
   return (
     <AppProvider>
       <AlertDisplay />
@@ -37,13 +60,25 @@ export const AppBase = () => {
         <Root>
           <FlatRoutes>
             <Route path="/" element={<Navigate to="catalog" />} />
-            <Route path="/catalog" element={<CatalogIndexPage />} />
+            <Route
+              path="/catalog"
+              element={<CatalogIndexPage columns={myCustomColumnsFunc} />}
+            />
             <Route
               path="/catalog/:namespace/:kind/:name"
               element={<CatalogEntityPage />}
             >
               {entityPage}
             </Route>
+            <Route path="/rbac" element={<RbacPage />} />
+            <Route
+              path="/bulk-import"
+              element={<Navigate to="repositories" />}
+            />
+            <Route
+              path="/bulk-import/repositories"
+              element={<BulkImportPage />}
+            />
             <Route path="/docs" element={<TechDocsIndexPage />} />
             <Route
               path="/docs/:namespace/:kind/:name/*"
