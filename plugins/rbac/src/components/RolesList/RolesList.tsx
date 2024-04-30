@@ -6,7 +6,6 @@ import { makeStyles } from '@material-ui/core';
 
 import { useLocationToast } from '../../hooks/useLocationToast';
 import { useRoles } from '../../hooks/useRoles';
-import { RolesData } from '../../types';
 import { SnackbarAlert } from '../SnackbarAlert';
 import { useToast } from '../ToastContext';
 import { useDeleteDialog } from './DeleteDialogContext';
@@ -26,10 +25,12 @@ export const RolesList = () => {
   const { toastMessage, setToastMessage } = useToast();
   const { openDialog, setOpenDialog, deleteRoleName } = useDeleteDialog();
   useLocationToast(setToastMessage);
-  const [roles, setRoles] = React.useState<number | undefined>();
+  const [roles, setRoles] = React.useState<number>();
   const classes = useStyles();
   const { loading, data, retry, createRoleAllowed, createRoleLoading, error } =
     useRoles();
+
+  const roleNames = React.useMemo(() => data.map(r => r.name), [data]);
 
   const closeDialog = () => {
     setOpenDialog(false);
@@ -40,9 +41,12 @@ export const RolesList = () => {
   const onAlertClose = () => {
     setToastMessage('');
   };
-  const onSearchResultsChange = (searchResults: RolesData[]) => {
-    setRoles(searchResults.length);
-  };
+  const onSearchResultsChange = React.useCallback(
+    (searchStr: string) => {
+      setRoles(roleNames.filter(name => name.includes(searchStr)).length);
+    },
+    [roleNames, setRoles],
+  );
 
   return (
     <>
@@ -74,7 +78,7 @@ export const RolesList = () => {
         data={data}
         isLoading={loading}
         columns={columns}
-        renderSummaryRow={summary => onSearchResultsChange(summary.data)}
+        onSearchChange={text => onSearchResultsChange(text)}
         emptyContent={
           <div data-testid="roles-table-empty" className={classes.empty}>
             No records found
