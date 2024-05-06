@@ -9,7 +9,7 @@ import { getObjectToAnnotate } from '../../utils/getObjectToAnnotate';
 import { resolveSpec } from '../../utils/resolveSpec';
 
 /**
- * Creates a new Scaffolder action to annotate a catalog-info.yaml with desired lable(s), annotation(s) and spec property(ies).
+ * Creates a new Scaffolder action to annotate a catalog-info.yaml with desired label(s), annotation(s) and spec property(ies).
  *
  */
 
@@ -48,12 +48,12 @@ export const createAnnotatorAction = (
           },
           objectFilePath: {
             title: 'Object File Path',
-            description: 'Path to the object yaml you want to annonate',
+            description: 'Path to the object yaml you want to annotate',
             type: 'string',
           },
           objectYaml: {
             title: 'Object Yaml',
-            description: 'Any object yaml you want to annonate',
+            description: 'Any object yaml you want to annotate',
             type: 'object',
           },
           writeToFile: {

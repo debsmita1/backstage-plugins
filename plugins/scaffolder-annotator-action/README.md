@@ -24,9 +24,9 @@ backend.start();
 
 1. Install the Annotator custom action plugin using the following command:
 
-   ```console
-   yarn workspace backend add @janus-idp/backstage-scaffolder-backend-module-annotator
-   ```
+```console
+yarn workspace backend add @janus-idp/backstage-scaffolder-backend-module-annotator
+```
 
 2. Integrate the custom actions in the `scaffolder-backend` `createRouter` function:
 
@@ -53,60 +53,58 @@ backend.start();
 
   export default async function createPlugin(
   const catalogClient = new CatalogClient({
-      discoveryApi: env.discovery,
+    discoveryApi: env.discovery,
   });
 
   /* highlight-add-start */
   const integrations = ScmIntegrations.fromConfig(env.config);
 
   const builtInActions = createBuiltinActions({
-      integrations: integrations as any,
-      catalogClient,
-      config: env.config,
-      reader: env.reader,
+    integrations: integrations as any,
+    catalogClient,
+    config: env.config,
+    reader: env.reader,
   });
   const actions = [...builtInActions, createTimestampAction(), createScaffoldedFromAction()];
   /* highlight-add-end */
 
 
   return await createRouter({
-  /* highlight-add-next-line */
-  actions,
-  logger: env.logger,
-  ...
+    /* highlight-add-next-line */
+    actions,
+    logger: env.logger,
+    ...
   });
   ```
 
 3. To annotate the catalog-info.yaml skeleton with the current timestamp, add the **catalog:timestamping** custom action in your template yaml after the `Fetch Skeleton + Template` step:
 
-````tsx title="template.yaml"
+```yaml title="template.yaml"
+steps:
+  - id: template
+    name: Fetch Skeleton + Template
+    action: fetch:template
+    ...
 
-- id: template
-  name: Fetch Skeleton + Template
-  action: fetch:template
-  ...
-
-/* highlight-add-start */
-- id: timestamp
-  name: Add Timestamp to catalog-info.yaml
-  action: catalog:timestamping
-/* highlight-add-end */
-
-  ```
+  # highlight-add-start
+  - id: timestamp
+    name: Add Timestamp to catalog-info.yaml
+    action: catalog:timestamping
+  # highlight-add-end
+```
 
 4. To annotate the catalog-info.yaml skeleton with the template entityRef, add the **catalog:scaffolded-from** custom action in your template yaml after the `Fetch Skeleton + Template` step:
 
-```tsx title="template.yaml"
+```yaml "title=template.yaml"
+steps:
+  - id: template
+    name: Fetch Skeleton + Template
+    action: fetch:template
+    ...
+  # highlight-add-start
+  - id: append-templateRef
+    name: Append the entityRef of this template to the entityRef
+    action: catalog:scaffolded-from
+  # highlight-add-end
 
-- id: template
-name: Fetch Skeleton + Template
-action: fetch:template
-...
-
-/* highlight-add-start */
-- id: append-templateRef
-name: Append the entityRef of this template to the entityRef
-action: catalog:scaffolded-from
-/* highlight-add-end */
-
-````
+```

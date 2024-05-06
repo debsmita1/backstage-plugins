@@ -10,7 +10,7 @@ export const resolveSpec = (
     return {};
   }
   return Object.keys(spec).reduce((acc, s) => {
-    acc = {
+    return {
       ...acc,
       ...{
         [`${s}`]:
@@ -19,6 +19,5 @@ export const resolveSpec = (
             : spec[s],
       },
     };
-    return acc;
   }, {});
 };
