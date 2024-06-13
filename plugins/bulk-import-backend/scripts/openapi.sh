@@ -14,3 +14,8 @@ echo '`' >> ${FILE}
 echo "export const openApiDocument = JSON.parse(OPENAPI);" >> ${FILE}
 
 rm ./src/schema/openapi.json
+
+# Generate doc
+#npx --yes --package=openapicmd@2.3.2 -- openapi redoc src/schema/openapi.yaml --bundle docs
+npx --yes --package=@openapitools/openapi-generator-cli@2.13.4 -- \
+  openapi-generator-cli generate -i ./src/schema/openapi.yaml -g markdown -o ./api-docs/
