@@ -13,24 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { PluginEndpointDiscovery } from '@backstage/backend-common';
+
+import gitUrlParse from 'git-url-parse';
 import jsYaml from 'js-yaml';
 import fetch from 'node-fetch';
-
 import { Logger } from 'winston';
-
-import {PluginEndpointDiscovery} from "@backstage/backend-common";
-import gitUrlParse from "git-url-parse";
 
 export class CatalogInfoGenerator {
   private readonly logger: Logger;
   private readonly discovery: PluginEndpointDiscovery;
 
   constructor(logger: Logger, discovery: PluginEndpointDiscovery) {
-    this.logger= logger;
+    this.logger = logger;
     this.discovery = discovery;
   }
 
-  async generateDefaultCatalogInfoContent(repoUrl: string, analyzeLocation: boolean = true): Promise<string> {
+  async generateDefaultCatalogInfoContent(
+    repoUrl: string,
+    analyzeLocation: boolean = true,
+  ): Promise<string> {
     const gitUrl = gitUrlParse(repoUrl);
     const defaultCatalogInfo = `---
 apiVersion: backstage.io/v1alpha1
@@ -49,20 +51,23 @@ spec:
 
     let generatedEntities: any[] = [];
     try {
-      const response = await fetch(`${await this.discovery.getBaseUrl('catalog')}/analyze-location`, {
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetch(
+        `${await this.discovery.getBaseUrl('catalog')}/analyze-location`,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          method: 'POST',
+          body: JSON.stringify({
+            location: {
+              type: 'github',
+              target: repoUrl,
+            },
+          }),
         },
-        method: "POST",
-        body: JSON.stringify({
-          location: {
-            type: 'github',
-            target: repoUrl,
-          }
-        }),
-      });
+      );
       generatedEntities = (await response.json()).generateEntities;
-    } catch(error) {
+    } catch (error) {
       // fallback to the default catalog-info value
       this.logger.debug(`could not analyze location ${repoUrl}`, error);
     }
@@ -71,8 +76,12 @@ spec:
       return defaultCatalogInfo;
     }
 
-    return generatedEntities.map((generatedEntity) => `---
-${jsYaml.dump(generatedEntity.entity)}`).join("\n");
+    return generatedEntities
+      .map(
+        generatedEntity => `---
+${jsYaml.dump(generatedEntity.entity)}`,
+      )
+      .join('\n');
   }
 
   getCatalogUrl(repoUrl: string, defaultBranch: string = 'main'): string {

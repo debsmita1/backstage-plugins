@@ -14,12 +14,17 @@
  * limitations under the License.
  */
 
-import { errorHandler,
-  PluginEndpointDiscovery, } from '@backstage/backend-common';
+import {
+  errorHandler,
+  PluginEndpointDiscovery,
+} from '@backstage/backend-common';
 import { CatalogApi } from '@backstage/catalog-client';
 import { Config } from '@backstage/config';
 import { NotAllowedError } from '@backstage/errors';
-import { IdentityApi, getBearerTokenFromAuthorizationHeader } from '@backstage/plugin-auth-node';
+import {
+  getBearerTokenFromAuthorizationHeader,
+  IdentityApi,
+} from '@backstage/plugin-auth-node';
 import {
   AuthorizeResult,
   createPermission,
@@ -31,19 +36,19 @@ import { createPermissionIntegrationRouter } from '@backstage/plugin-permission-
 import { fullFormats } from 'ajv-formats/dist/formats';
 import express from 'express';
 import Router from 'express-promise-router';
-import { Context, OpenAPIBackend, Request } from 'openapi-backend';
-import { Paths } from '../openapi';
-import { openApiDocument } from '../openapidocument';
 import gitUrlParse from 'git-url-parse';
+import { Context, OpenAPIBackend, Request } from 'openapi-backend';
 import { Logger } from 'winston';
 
 import crypto from 'crypto';
 
 import { CatalogInfoGenerator } from '../helpers/catalogInfoGenerator';
+import { Paths } from '../openapi';
+import { openApiDocument } from '../openapidocument';
 import { GithubApiService } from './githubApiService';
-import { ping } from "./handlers/ping";
-import { findAllRepositories} from "./handlers/repositories";
-import {createImportJobs, findAllImports} from "./handlers/bulkImports";
+import { createImportJobs, findAllImports } from './handlers/bulkImports';
+import { ping } from './handlers/ping';
+import { findAllRepositories } from './handlers/repositories';
 
 // TODO: Remove this when done to use the @janus-idp/backstage-plugin-bulk-import-common import instead
 /** This permission is used to access the bulk-import endpoints
@@ -87,7 +92,8 @@ async function permissionCheck(
 export async function createRouter(
   options: RouterOptions,
 ): Promise<express.Router> {
-  const { logger, permissions, config, discovery, identity, catalogApi } = options;
+  const { logger, permissions, config, discovery, identity, catalogApi } =
+    options;
 
   const githubApiService = new GithubApiService(logger, config);
   const catalogInfoGenerator = new CatalogInfoGenerator(logger, discovery);
@@ -104,60 +110,67 @@ export async function createRouter(
   await api.init();
 
   api.register(
-      'ping',
-      (
-          _c: Context,
-          _req: express.Request,
-          res: express.Response,
-      ) => ping(logger).then(result => res.json(result)),
+    'ping',
+    (_c: Context, _req: express.Request, res: express.Response) =>
+      ping(logger).then(result => res.json(result)),
   );
 
   api.register(
-      'findAllRepositories',
-      async (
-          _c: Context,
-          req: express.Request,
-          res: express.Response,
-      ) => {
-        const backstageToken = getBearerTokenFromAuthorizationHeader(
-            req.header('authorization'),
-        );
-        await permissionCheck(permissions, backstageToken);
-        const repos = await findAllRepositories(logger, githubApiService, catalogApi, catalogInfoGenerator, true);
-        return res.json(repos);
-      },
+    'findAllRepositories',
+    async (_c: Context, req: express.Request, res: express.Response) => {
+      const backstageToken = getBearerTokenFromAuthorizationHeader(
+        req.header('authorization'),
+      );
+      await permissionCheck(permissions, backstageToken);
+      const repos = await findAllRepositories(
+        logger,
+        githubApiService,
+        catalogApi,
+        catalogInfoGenerator,
+        true,
+      );
+      return res.json(repos);
+    },
   );
 
   api.register(
-      'findAllImports',
-      async (
-          _c: Context,
-          req: express.Request,
-          res: express.Response,
-      ) => {
-        const backstageToken = getBearerTokenFromAuthorizationHeader(
-            req.header('authorization'),
-        );
-        await permissionCheck(permissions, backstageToken);
-        const imports = await findAllImports(logger, githubApiService, catalogApi, catalogInfoGenerator);
-        return res.json(imports);
-      },
+    'findAllImports',
+    async (_c: Context, req: express.Request, res: express.Response) => {
+      const backstageToken = getBearerTokenFromAuthorizationHeader(
+        req.header('authorization'),
+      );
+      await permissionCheck(permissions, backstageToken);
+      const imports = await findAllImports(
+        logger,
+        githubApiService,
+        catalogApi,
+        catalogInfoGenerator,
+      );
+      return res.json(imports);
+    },
   );
 
   api.register(
-      'createImportJobs',
-      async (
-          c: Context<Paths.CreateImportJobs.RequestBody>,
-          req: express.Request,
-          res: express.Response,
-      ) => {
-        const backstageToken = getBearerTokenFromAuthorizationHeader(
-            req.header('authorization'),
-        );
-        await permissionCheck(permissions, backstageToken);
-        const imports = await createImportJobs(logger, config, catalogApi, githubApiService, catalogInfoGenerator, c.request.requestBody);
-        return res.json(imports);
-      },
+    'createImportJobs',
+    async (
+      c: Context<Paths.CreateImportJobs.RequestBody>,
+      req: express.Request,
+      res: express.Response,
+    ) => {
+      const backstageToken = getBearerTokenFromAuthorizationHeader(
+        req.header('authorization'),
+      );
+      await permissionCheck(permissions, backstageToken);
+      const imports = await createImportJobs(
+        logger,
+        config,
+        catalogApi,
+        githubApiService,
+        catalogInfoGenerator,
+        c.request.requestBody,
+      );
+      return res.json(imports);
+    },
   );
 
   const router = Router();

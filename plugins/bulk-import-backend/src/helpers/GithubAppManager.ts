@@ -139,14 +139,16 @@ class GithubAppManager {
   async getInstallationCredentials(
     host: string,
   ): Promise<{ accessToken: string | undefined }[]> {
-
-    const creds: { accessToken: string | undefined }[] = []
+    const creds: { accessToken: string | undefined }[] = [];
     const installationData = await this.getInstallationData();
     let installationDataFiltered: InstallationData[] = [];
     if (this.allowedInstallationOwners) {
       for (const installation of installationData) {
-        if (installation.accountLogin && !this.allowedInstallationOwners.includes(installation.accountLogin)) {
-          continue
+        if (
+          installation.accountLogin &&
+          !this.allowedInstallationOwners.includes(installation.accountLogin)
+        ) {
+          continue;
         }
         installationDataFiltered.push(installation);
       }
@@ -161,36 +163,42 @@ class GithubAppManager {
     for (const installation of installationDataFiltered) {
       const installationId = installation.installationId;
       if (installation.suspended) {
-        throw new Error(`The GitHub application for ${installationId} is suspended`);
+        throw new Error(
+          `The GitHub application for ${installationId} is suspended`,
+        );
       }
-      const cred = await this.cache.getOrCreateToken(`${host}-${installationId}`, async () => {
-        const result = await this.appClient.apps.createInstallationAccessToken({
-          installation_id: installationId,
-          headers: HEADERS,
-        });
+      const cred = await this.cache.getOrCreateToken(
+        `${host}-${installationId}`,
+        async () => {
+          const result =
+            await this.appClient.apps.createInstallationAccessToken({
+              installation_id: installationId,
+              headers: HEADERS,
+            });
 
-        let repositoryNames;
+          let repositoryNames;
 
-        if (result.data.repository_selection === 'selected') {
-          const installationClient = new Octokit({
-            baseUrl: this.baseUrl,
-            auth: result.data.token,
-          });
-          const repos = await installationClient.paginate(
+          if (result.data.repository_selection === 'selected') {
+            const installationClient = new Octokit({
+              baseUrl: this.baseUrl,
+              auth: result.data.token,
+            });
+            const repos = await installationClient.paginate(
               installationClient.apps.listReposAccessibleToInstallation,
-          );
-          // The return type of the paginate method is incorrect.
-          const repositories: RestEndpointMethodTypes['apps']['listReposAccessibleToInstallation']['response']['data']['repositories'] =
+            );
+            // The return type of the paginate method is incorrect.
+            const repositories: RestEndpointMethodTypes['apps']['listReposAccessibleToInstallation']['response']['data']['repositories'] =
               repos.repositories ?? repos;
 
-          repositoryNames = repositories.map(repository => repository.name);
-        }
-        return {
-          token: result.data.token,
-          expiresAt: DateTime.fromISO(result.data.expires_at),
-          repositories: repositoryNames,
-        };
-      });
+            repositoryNames = repositories.map(repository => repository.name);
+          }
+          return {
+            token: result.data.token,
+            expiresAt: DateTime.fromISO(result.data.expires_at),
+            repositories: repositoryNames,
+          };
+        },
+      );
       creds.push(cred);
     }
 
@@ -212,7 +220,7 @@ class GithubAppManager {
     //     inst.account.login?.toLocaleLowerCase('en-US') ===
     //       owner.toLocaleLowerCase('en-US'),
     // );
-    return allInstallations.map((installation) => {
+    return allInstallations.map(installation => {
       return {
         installationId: installation.id,
         accountLogin: installation.account?.login,
@@ -274,7 +282,10 @@ export class GithubAppsCredentialManager {
     );
 
     const result = results.find(
-      resultItem => resultItem.credentials && resultItem.credentials!.length !== 0 && resultItem.credentials[0]?.accessToken,
+      resultItem =>
+        resultItem.credentials &&
+        resultItem.credentials!.length !== 0 &&
+        resultItem.credentials[0]?.accessToken,
     );
     if (result && result.credentials) {
       return result.credentials[0].accessToken;
@@ -322,7 +333,7 @@ export class GithubAppsCredentialManager {
         credentials.push({
           appId: cred.appId,
           error: cred.error,
-        })
+        });
       }
     }
     return credentials;
@@ -520,7 +531,7 @@ export class CustomGithubCredentialsProvider
   }
 
   async getAllCredentials(opts: {
-    host: string,
+    host: string;
   }): Promise<ExtendedGithubCredentials[]> {
     const provider = this.providers.get(opts.host);
 

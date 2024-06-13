@@ -1,3 +1,7 @@
+// GENERATED FILE. DO NOT EDIT.
+
+// eslint-disable
+// prettier-ignore
 import type {
   OpenAPIClient,
   Parameters,

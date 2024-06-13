@@ -1,4 +1,7 @@
-// Generated file. Do not edit.
+// GENERATED FILE. DO NOT EDIT.
+
+// eslint-disable
+// prettier-ignore
 const OPENAPI = `
 {
   "openapi": "3.1.0",

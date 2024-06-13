@@ -15,12 +15,18 @@
  */
 
 import { Config } from '@backstage/config';
-import {GithubCredentials, GithubIntegrationConfig, ScmIntegrations} from '@backstage/integration';
+import {
+  GithubCredentials,
+  GithubIntegrationConfig,
+  ScmIntegrations,
+} from '@backstage/integration';
 
 import { Octokit, RestEndpointMethodTypes } from '@octokit/rest';
+import gitUrlParse from 'git-url-parse';
 import { Logger } from 'winston';
 
 import { CustomGithubCredentialsProvider } from '../helpers';
+import { Components } from '../openapi';
 import {
   ExtendedGithubCredentials,
   GithubAppCredentials,
@@ -29,8 +35,6 @@ import {
   GithubRepositoryResponse,
   isGithubAppCredential,
 } from '../types';
-import {Components} from "../openapi";
-import gitUrlParse from "git-url-parse";
 
 export class GithubApiService {
   private readonly logger: Logger;
@@ -41,15 +45,15 @@ export class GithubApiService {
     this.logger = logger;
     this.integrations = ScmIntegrations.fromConfig(config);
     this.githubCredentialsProvider =
-        CustomGithubCredentialsProvider.fromIntegrations(this.integrations);
+      CustomGithubCredentialsProvider.fromIntegrations(this.integrations);
   }
 
   /**
    * Creates the GithubRepoFetchError to be stored in the returned errors array of the returned GithubRepositoryResponse object
    */
   private createCredentialError(
-      credential: ExtendedGithubCredentials,
-      err?: Error,
+    credential: ExtendedGithubCredentials,
+    err?: Error,
   ): GithubRepoFetchError | undefined {
     if (err) {
       if (isGithubAppCredential(credential)) {
@@ -88,18 +92,18 @@ export class GithubApiService {
    * If any errors occurs, adds them to the provided errors Map<number, GithubRepoFetchError>
    */
   private async addGithubAppRepositories(
-      octokit: Octokit,
-      credential: GithubAppCredentials,
-      repositories: Map<string, GithubRepository>,
-      errors: Map<number, GithubRepoFetchError>,
+    octokit: Octokit,
+    credential: GithubAppCredentials,
+    repositories: Map<string, GithubRepository>,
+    errors: Map<number, GithubRepoFetchError>,
   ): Promise<void> {
     try {
       const repos = await octokit.paginate(
-          octokit.apps.listReposAccessibleToInstallation,
+        octokit.apps.listReposAccessibleToInstallation,
       );
       // The return type of the paginate method is incorrect for apps.listReposAccessibleToInstallation
       const accessibleRepos: RestEndpointMethodTypes['apps']['listReposAccessibleToInstallation']['response']['data']['repositories'] =
-          repos.repositories ?? repos;
+        repos.repositories ?? repos;
       accessibleRepos.forEach(repo => {
         const githubRepo: GithubRepository = {
           name: repo.name,
@@ -112,11 +116,11 @@ export class GithubApiService {
       });
     } catch (err) {
       this.logger.error(
-          `Fetching repositories with access token for github app ${credential.appId}, failed with ${err}`,
+        `Fetching repositories with access token for github app ${credential.appId}, failed with ${err}`,
       );
       const credentialError = this.createCredentialError(
-          credential,
-          err as Error,
+        credential,
+        err as Error,
       );
       if (credentialError) {
         errors.set(credential.appId, credentialError);
@@ -129,15 +133,14 @@ export class GithubApiService {
    * If any errors occurs, adds them to the provided errors Map<number, GithubRepoFetchError>
    */
   private async addGithubTokenRepositories(
-      octokit: Octokit,
-      credential: GithubCredentials,
-      repositories: Map<string, GithubRepository>,
-      errors: Map<number, GithubRepoFetchError>,
+    octokit: Octokit,
+    credential: GithubCredentials,
+    repositories: Map<string, GithubRepository>,
+    errors: Map<number, GithubRepoFetchError>,
   ): Promise<void> {
-
     try {
       const repos = await octokit.paginate(
-          octokit.rest.repos.listForAuthenticatedUser,
+        octokit.rest.repos.listForAuthenticatedUser,
       );
       repos.forEach(repo => {
         /**
@@ -157,11 +160,11 @@ export class GithubApiService {
       });
     } catch (err) {
       this.logger.error(
-          `Fetching repositories with token from token failed with ${err}`,
+        `Fetching repositories with token from token failed with ${err}`,
       );
       const credentialError = this.createCredentialError(
-          credential,
-          err as Error,
+        credential,
+        err as Error,
       );
       if (credentialError) {
         errors.set(-1, credentialError);
@@ -175,16 +178,23 @@ export class GithubApiService {
    *   - a list of errors encountered by each app and/or token (if any exist)
    */
   async getRepositoriesFromIntegrations(): Promise<GithubRepositoryResponse> {
-    const ghConfigs = this.integrations.github.list().map((ghInt) => ghInt.config);
+    const ghConfigs = this.integrations.github
+      .list()
+      .map(ghInt => ghInt.config);
     if (ghConfigs.length === 0) {
-      this.logger.debug("No GitHub Integration in config => returning an empty list of repositories.")
+      this.logger.debug(
+        'No GitHub Integration in config => returning an empty list of repositories.',
+      );
       return {
         repositories: [],
         errors: [],
       };
     }
 
-    const credentialsByConfig = new Map<GithubIntegrationConfig, ExtendedGithubCredentials[]>;
+    const credentialsByConfig = new Map<
+      GithubIntegrationConfig,
+      ExtendedGithubCredentials[]
+    >();
     for (const ghConfig of ghConfigs) {
       const creds = await this.githubCredentialsProvider.getAllCredentials({
         host: ghConfig.host,
@@ -198,7 +208,7 @@ export class GithubApiService {
         if ('error' in credential) {
           if (credential.error?.name !== 'NotFoundError') {
             this.logger.error(
-                `Obtaining the Access Token Github App with appId: ${credential.appId} failed with ${credential.error}`,
+              `Obtaining the Access Token Github App with appId: ${credential.appId} failed with ${credential.error}`,
             );
             const credentialError = this.createCredentialError(credential);
             if (credentialError) {
@@ -218,17 +228,17 @@ export class GithubApiService {
 
         if (isGithubAppCredential(credential)) {
           await this.addGithubAppRepositories(
-              octokit,
-              credential,
-              repositories,
-              errors,
+            octokit,
+            credential,
+            repositories,
+            errors,
           );
         } else {
           await this.addGithubTokenRepositories(
-              octokit,
-              credential,
-              repositories,
-              errors,
+            octokit,
+            credential,
+            repositories,
+            errors,
           );
         }
       }
@@ -239,11 +249,14 @@ export class GithubApiService {
     };
   }
 
-  async findImportOpenPr(logger: Logger, input: {
-    repoUrl: string,
-  }): Promise<{
-    prNum?: number,
-    prUrl?: string,
+  async findImportOpenPr(
+    logger: Logger,
+    input: {
+      repoUrl: string;
+    },
+  ): Promise<{
+    prNum?: number;
+    prUrl?: string;
   }> {
     const ghConfig = this.integrations.github.byUrl(input.repoUrl)?.config;
     if (!ghConfig) {
@@ -261,12 +274,12 @@ export class GithubApiService {
       throw new Error(`No credentials for GH integration`);
     }
 
-    const branchName = "chore/janus-idp/backstage-bulk-import";
+    const branchName = 'chore/janus-idp/backstage-bulk-import';
     for (const credential of credentials) {
       if ('error' in credential) {
         if (credential.error?.name !== 'NotFoundError') {
           this.logger.error(
-              `Obtaining the Access Token Github App with appId: ${credential.appId} failed with ${credential.error}`,
+            `Obtaining the Access Token Github App with appId: ${credential.appId} failed with ${credential.error}`,
           );
           const credentialError = this.createCredentialError(credential);
           if (credentialError) {
@@ -291,14 +304,14 @@ export class GithubApiService {
   }
 
   private async findOpenPRForBranch(
-      logger: Logger,
-      octo : Octokit,
-      owner: string ,
-      repo: string,
-      branchName: string,
-    ): Promise<{
-    prNum?: number,
-    prUrl?: string,
+    logger: Logger,
+    octo: Octokit,
+    owner: string,
+    repo: string,
+    branchName: string,
+  ): Promise<{
+    prNum?: number;
+    prUrl?: string;
   }> {
     try {
       const response = await octo.rest.pulls.list({
@@ -321,19 +334,19 @@ export class GithubApiService {
   }
 
   private async createOrUpdateFileInBranch(
-      octo: Octokit,
-      owner: string,
-      repo: string,
-      branchName: string,
-      fileName: string,
-      fileContent: string,
+    octo: Octokit,
+    owner: string,
+    repo: string,
+    branchName: string,
+    fileName: string,
+    fileContent: string,
   ): Promise<void> {
     try {
-      const {data: existingFile} = await octo.rest.repos.getContent({
+      const { data: existingFile } = await octo.rest.repos.getContent({
         owner: owner,
         repo: repo,
         path: fileName,
-        ref: branchName
+        ref: branchName,
       });
       // If the file already exists, update it
       await octo.rest.repos.createOrUpdateFileContents({
@@ -343,7 +356,7 @@ export class GithubApiService {
         message: `Add ${fileName} config file`,
         content: btoa(fileContent),
         sha: existingFile.sha,
-        branch: branchName
+        branch: branchName,
       });
     } catch (error) {
       if (error.status === 404) {
@@ -354,7 +367,7 @@ export class GithubApiService {
           path: fileName,
           message: `Add ${fileName} config file`,
           content: btoa(fileContent),
-          branch: branchName
+          branch: branchName,
         });
       } else {
         throw error;
@@ -362,16 +375,19 @@ export class GithubApiService {
     }
   }
 
-  async submitPrToRepo(logger: Logger, input: {
-    repoUrl: string,
-    gitUrl: gitUrlParse.GitUrl,
-    prTitle: string,
-    prBody: string,
-    catalogInfoContent: string,
-  }): Promise<{
-    prUrl?: string,
-    prNumber?: number,
-    errors?: string[],
+  async submitPrToRepo(
+    logger: Logger,
+    input: {
+      repoUrl: string;
+      gitUrl: gitUrlParse.GitUrl;
+      prTitle: string;
+      prBody: string;
+      catalogInfoContent: string;
+    },
+  ): Promise<{
+    prUrl?: string;
+    prNumber?: number;
+    errors?: string[];
   }> {
     const ghConfig = this.integrations.github.byUrl(input.repoUrl)?.config;
     if (!ghConfig) {
@@ -388,14 +404,14 @@ export class GithubApiService {
       throw new Error(`No credentials for GH integration`);
     }
 
-    const branchName = "chore/janus-idp/backstage-bulk-import";
-    const fileName = "catalog-info.yaml";
+    const branchName = 'chore/janus-idp/backstage-bulk-import';
+    const fileName = 'catalog-info.yaml';
     const errors: any[] = [];
     for (const credential of credentials) {
       if ('error' in credential) {
         if (credential.error?.name !== 'NotFoundError') {
           this.logger.error(
-              `Obtaining the Access Token Github App with appId: ${credential.appId} failed with ${credential.error}`,
+            `Obtaining the Access Token Github App with appId: ${credential.appId} failed with ${credential.error}`,
           );
           const credentialError = this.createCredentialError(credential);
           if (credentialError) {
@@ -413,19 +429,32 @@ export class GithubApiService {
         auth: credential.token,
       });
       try {
-        const existingPrForBranch = await this.findOpenPRForBranch(logger, octo, owner, repo, branchName);
+        const existingPrForBranch = await this.findOpenPRForBranch(
+          logger,
+          octo,
+          owner,
+          repo,
+          branchName,
+        );
 
         const repoData = await octo.rest.repos.get({
           owner,
-          repo
+          repo,
         });
         const parentRef = await octo.rest.git.getRef({
           owner,
           repo,
-          ref: `heads/${repoData.data.default_branch}`
+          ref: `heads/${repoData.data.default_branch}`,
         });
         if (existingPrForBranch.prNum) {
-          await this.createOrUpdateFileInBranch(octo, owner, repo, branchName, fileName, input.catalogInfoContent);
+          await this.createOrUpdateFileInBranch(
+            octo,
+            owner,
+            repo,
+            branchName,
+            fileName,
+            input.catalogInfoContent,
+          );
           const pullRequestResponse = await octo.rest.pulls.update({
             owner,
             repo,
@@ -453,14 +482,21 @@ export class GithubApiService {
               owner,
               repo,
               ref: `refs/heads/${branchName}`,
-              sha: parentRef.data.object.sha
+              sha: parentRef.data.object.sha,
             });
           } else {
             throw error;
           }
         }
 
-        await this.createOrUpdateFileInBranch(octo, owner, repo, branchName, fileName, input.catalogInfoContent);
+        await this.createOrUpdateFileInBranch(
+          octo,
+          owner,
+          repo,
+          branchName,
+          fileName,
+          input.catalogInfoContent,
+        );
 
         const pullRequestResponse = await octo.rest.pulls.create({
           owner,
@@ -475,16 +511,18 @@ export class GithubApiService {
           prNumber: pullRequestResponse.data.number,
           prUrl: pullRequestResponse.data.html_url,
         };
-      } catch(e) {
+      } catch (e) {
         logger.warn(`Couldn't create PR in ${input.repoUrl}: ${e}`);
         errors.push(e.message);
       }
     }
 
-    logger.warn(`Tried all possible GitHub credentials, but could not create PR in ${input.repoUrl}. Please try again later...`);
+    logger.warn(
+      `Tried all possible GitHub credentials, but could not create PR in ${input.repoUrl}. Please try again later...`,
+    );
 
     return {
       errors: errors,
-    }
+    };
   }
 }
