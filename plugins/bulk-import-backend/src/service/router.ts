@@ -125,7 +125,6 @@ export async function createRouter(
       const repos = await findAllRepositories(
         logger,
         githubApiService,
-        catalogApi,
         catalogInfoGenerator,
         true,
       );
@@ -143,7 +142,6 @@ export async function createRouter(
       const imports = await findAllImports(
         logger,
         githubApiService,
-        catalogApi,
         catalogInfoGenerator,
       );
       return res.json(imports);
