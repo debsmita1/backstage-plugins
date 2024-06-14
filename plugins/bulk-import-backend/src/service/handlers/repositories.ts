@@ -20,17 +20,23 @@ export async function findAllRepositories(
     .getRepositoriesFromIntegrations()
     .then(repos =>
       repos.repositories.map(async repo => {
-        const gitUrl = gitUrlParse(repo.html_url);
-        const importStatus = checkStatus
-          ? await getImportStatus(
-              logger,
-              githubApiService,
-              catalogApi,
-              catalogInfoGenerator,
-              repo.html_url,
-              repo.default_branch,
-            )
-          : undefined;
+          const gitUrl = gitUrlParse(repo.html_url);
+          let importStatus: Components.Schemas.ImportStatus | undefined;
+          const errors : string[] = [];
+          try {
+              importStatus = checkStatus
+                  ? await getImportStatus(
+                      logger,
+                      githubApiService,
+                      catalogApi,
+                      catalogInfoGenerator,
+                      repo.html_url,
+                      repo.default_branch,
+                  )
+                  : undefined;
+          } catch (error: any) {
+              errors.push(error.message);
+          }
         return {
           id: `${gitUrl.organization}/${repo.name}`,
           name: repo.name,
@@ -38,6 +44,7 @@ export async function findAllRepositories(
           url: repo.html_url,
           defaultBranch: repo.default_branch,
           importStatus: importStatus,
+          errors: errors,
         } as Components.Schemas.Repository;
       }),
     );

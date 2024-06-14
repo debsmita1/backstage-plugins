@@ -196,6 +196,12 @@ const OPENAPI = `
           "defaultBranch": {
             "type": "string",
             "description": "default branch"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },

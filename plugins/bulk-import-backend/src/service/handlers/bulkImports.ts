@@ -32,36 +32,49 @@ export async function findAllImports(
       repo.url,
       repo.defaultBranch,
     );
-    const exists = await verifyLocationExistence(catalogApi, catalogUrl);
-    if (exists) {
+    const errors: string[] = [];
+    try {
+      const exists = await verifyLocationExistence(catalogApi, catalogUrl);
+      if (exists) {
+        result.push({
+          id: repo.id,
+          status: 'ADDED',
+          repository: repo,
+          approvalTool: 'GIT',
+        });
+        continue;
+      }
+      // Check to see if there are any PR
+      const openImportPr = await githubApiService.findImportOpenPr(logger, {
+        repoUrl: repo.url,
+      });
+      if (!openImportPr.prUrl) {
+        // No import PR
+        continue;
+      }
       result.push({
         id: repo.id,
-        status: 'ADDED',
+        status: 'WAIT_PR_APPROVAL',
+        repository: repo,
+        approvalTool: 'GIT',
+        github: {
+          pullRequest: {
+            number: openImportPr.prNum,
+            url: openImportPr.prUrl,
+          },
+        },
+      });
+    } catch (error: any) {
+      errors.push(error.message);
+
+      result.push({
+        id: repo.id,
+        status: 'WAIT_PR_APPROVAL',
+        errors: errors,
         repository: repo,
         approvalTool: 'GIT',
       });
-      continue;
     }
-    // Check to see if there are any PR
-    const openImportPr = await githubApiService.findImportOpenPr(logger, {
-      repoUrl: repo.url,
-    });
-    if (!openImportPr.prUrl) {
-      // No import PR
-      continue;
-    }
-    result.push({
-      id: repo.id,
-      status: 'WAIT_PR_APPROVAL',
-      repository: repo,
-      approvalTool: 'GIT',
-      github: {
-        pullRequest: {
-          number: openImportPr.prNum,
-          url: openImportPr.prUrl,
-        },
-      },
-    });
   }
 
   return result;

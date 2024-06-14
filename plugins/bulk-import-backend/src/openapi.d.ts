@@ -126,6 +126,7 @@ declare namespace Components {
              * default branch
              */
             defaultBranch?: string;
+            errors?: string[];
         }
     }
 }
