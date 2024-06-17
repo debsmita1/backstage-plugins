@@ -127,7 +127,6 @@ components:
           items:
             type: string
 
-
     ApprovalTool:
       type: string
       enum:

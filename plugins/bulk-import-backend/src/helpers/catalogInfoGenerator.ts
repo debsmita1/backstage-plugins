@@ -90,17 +90,19 @@ ${jsYaml.dump(generatedEntity.entity)}`,
 
   async listCatalogUrlLocations(): Promise<string[]> {
     const response = await fetch(
-        `${await this.discovery.getBaseUrl('catalog')}/locations`,
-        {
-          headers: {
-            'Accept': 'application/json',
-          },
-          method: 'GET',
+      `${await this.discovery.getBaseUrl('catalog')}/locations`,
+      {
+        headers: {
+          Accept: 'application/json',
         },
+        method: 'GET',
+      },
     );
-    const locations = (await response.json()) as {data: {id: string, target: string, type: string}}[];
+    const locations = (await response.json()) as {
+      data: { id: string; target: string; type: string };
+    }[];
     return locations
-        .filter(location => location.data.type === 'url')
-        .map(location => location.data.target);
+      .filter(location => location.data.type === 'url')
+      .map(location => location.data.target);
   }
 }
