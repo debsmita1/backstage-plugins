@@ -34,16 +34,31 @@ import {
 import { GithubApiService } from './githubApiService';
 import { createRouter } from './router';
 
-const mockCreateCatalogInfoGenerator = jest.fn();
+const generateDefaultCatalogInfoContent = jest.fn();
 
-CatalogInfoGenerator.prototype.createCatalogInfoGenerator =
-  mockCreateCatalogInfoGenerator;
+CatalogInfoGenerator.prototype.generateDefaultCatalogInfoContent =
+  generateDefaultCatalogInfoContent;
 
 const mockedAuthorize: jest.MockedFunction<PermissionEvaluator['authorize']> =
   jest.fn();
 const mockedPermissionQuery: jest.MockedFunction<
   PermissionEvaluator['authorizeConditional']
 > = jest.fn();
+
+const mockUser = {
+  type: 'User',
+  userEntityRef: 'user:default/guest',
+  ownershipEntityRefs: ['guest'],
+};
+const mockIdentityClient = {
+  getIdentity: jest.fn().mockImplementation(async () => ({
+    identity: mockUser,
+  })),
+};
+const mockDiscovery = {
+  getBaseUrl: jest.fn(),
+  getExternalBaseUrl: jest.fn(),
+};
 
 const permissionEvaluator: PermissionEvaluator = {
   authorize: mockedAuthorize,
@@ -124,7 +139,9 @@ describe('createRouter', () => {
       logger: getVoidLogger(),
       config: configuration,
       permissions: permissionEvaluator,
+      discovery: mockDiscovery,
       catalogApi: mockCatalogClient,
+      identity: mockIdentityClient,
     });
     app = express().use(router);
   });
@@ -133,19 +150,19 @@ describe('createRouter', () => {
     jest.resetAllMocks();
   });
 
-  describe('GET /health', () => {
+  describe('GET /ping', () => {
     it('returns ok', async () => {
-      const response = await request(app).get('/health');
+      const response = await request(app).get('/ping');
 
       expect(response.status).toEqual(200);
       expect(response.body).toEqual({ status: 'ok' });
     });
   });
 
-  describe('POST /repositories', () => {
+  describe('GET /repositories', () => {
     it('returns 400 when no owner field is provided in the body', async () => {
       mockedPermissionQuery.mockImplementation(allowAll);
-      const response = await request(app).post('/repositories').send();
+      const response = await request(app).get('/repositories').send();
       expect(response.status).toEqual(400);
       expect(response.body).toEqual({
         error:
@@ -155,9 +172,7 @@ describe('createRouter', () => {
 
     it('returns 400 when owner field is not a valid URL', async () => {
       mockedPermissionQuery.mockImplementation(allowAll);
-      const response = await request(app)
-        .post('/repositories')
-        .send({ owner: 'invalid' });
+      const response = await request(app).get('/repositories');
       expect(response.status).toEqual(400);
       expect(response.body).toEqual({
         error:
@@ -167,7 +182,7 @@ describe('createRouter', () => {
     it('returns 404 when owner field does not have a corresponding github integration', async () => {
       mockedPermissionQuery.mockImplementation(allowAll);
       const response = await request(app)
-        .post('/repositories')
+        .get('/repositories')
         .send({ owner: 'https://github.com/test' });
       expect(response.status).toEqual(404);
       expect(response.body).toEqual({
@@ -196,11 +211,11 @@ describe('createRouter', () => {
         errors: [],
       };
       mockedPermissionQuery.mockImplementation(allowAll);
-      const mockGetGithubRepositories = jest
+      const getRepositoriesFromIntegrations = jest
         .fn()
         .mockReturnValue(githubApiServiceResponse);
-      GithubApiService.prototype.getGithubRepositories =
-        mockGetGithubRepositories;
+      GithubApiService.prototype.getRepositoriesFromIntegrations =
+        getRepositoriesFromIntegrations;
 
       mockAddLocation
         .mockReturnValueOnce({ exists: false })
@@ -226,12 +241,12 @@ describe('createRouter', () => {
             ),
           };
         });
-      mockCreateCatalogInfoGenerator
+      generateDefaultCatalogInfoContent
         .mockReturnValueOnce(expectedEntities[0])
         .mockReturnValue(expectedEntities[1]);
 
       const response = await request(app)
-        .post('/repositories')
+        .get('/repositories')
         .send({ owner: 'https://github.com/backstage' });
       expect(response.status).toEqual(200);
       expect(response.body).toEqual({
@@ -292,11 +307,11 @@ describe('createRouter', () => {
         ],
       };
       mockedPermissionQuery.mockImplementation(allowAll);
-      const mockGetGithubRepositories = jest
+      const getRepositoriesFromIntegrations = jest
         .fn()
         .mockReturnValue(githubApiServiceResponse);
-      GithubApiService.prototype.getGithubRepositories =
-        mockGetGithubRepositories;
+      GithubApiService.prototype.getRepositoriesFromIntegrations =
+        getRepositoriesFromIntegrations;
 
       mockedPermissionQuery.mockImplementation(allowAll);
       mockAddLocation
@@ -321,12 +336,12 @@ describe('createRouter', () => {
             ),
           };
         });
-      mockCreateCatalogInfoGenerator
+      generateDefaultCatalogInfoContent
         .mockReturnValueOnce(expectedEntities[0])
         .mockReturnValue(expectedEntities[1]);
 
       const response = await request(app)
-        .post('/repositories')
+        .get('/repositories')
         .send({ owner: 'https://github.com/test' });
 
       expect(response.status).toEqual(207);
@@ -373,16 +388,14 @@ describe('createRouter', () => {
         ],
       };
       mockedPermissionQuery.mockImplementation(allowAll);
-      const mockGetGithubRepositories = jest
+      const getRepositoriesFromIntegrations = jest
         .fn()
         .mockReturnValue(githubApiServiceResponse);
-      GithubApiService.prototype.getGithubRepositories =
-        mockGetGithubRepositories;
+      GithubApiService.prototype.getRepositoriesFromIntegrations =
+        getRepositoriesFromIntegrations;
 
       mockedPermissionQuery.mockImplementation(allowAll);
-      const response = await request(app)
-        .post('/repositories')
-        .send({ owner: 'https://github.com/test' });
+      const response = await request(app).get('/repositories');
       expect(response.status).toEqual(207);
       expect(response.body).toEqual(githubApiServiceResponse);
     });

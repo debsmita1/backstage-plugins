@@ -17,8 +17,6 @@
 import { getVoidLogger } from '@backstage/backend-common';
 import { Config, ConfigReader } from '@backstage/config';
 
-import gitUrlParse from 'git-url-parse';
-
 import { CustomGithubCredentialsProvider } from '../helpers';
 import { GithubApiService } from './githubApiService';
 
@@ -145,8 +143,7 @@ describe('GithubApiService tests', () => {
     });
     octokit.rest.repos.listForOrg.mockReturnValue({ data: [] });
 
-    const parsed = gitUrlParse('https://github.com/backstage');
-    const result = await githubApiService.getGithubRepositories(parsed);
+    const result = await githubApiService.getRepositoriesFromIntegrations();
 
     const expected_response = {
       repositories: [],
@@ -205,8 +202,7 @@ describe('GithubApiService tests', () => {
       ],
     });
 
-    const parsed = gitUrlParse('https://github.com/backstage');
-    const result = await githubApiService.getGithubRepositories(parsed);
+    const result = await githubApiService.getRepositoriesFromIntegrations();
 
     const expected_response = {
       repositories: [
@@ -288,8 +284,7 @@ describe('GithubApiService tests', () => {
         ],
       });
 
-    const parsed = gitUrlParse('https://github.com/backstage');
-    const result = await githubApiService.getGithubRepositories(parsed);
+    const result = await githubApiService.getRepositoriesFromIntegrations();
 
     const expected_response = {
       repositories: [
@@ -375,8 +370,7 @@ describe('GithubApiService tests', () => {
       data: [],
     });
 
-    const parsed = gitUrlParse('https://github.com/bob');
-    const result = await githubApiService.getGithubRepositories(parsed);
+   const result = await githubApiService.getRepositoriesFromIntegrations();
 
     const expected_response = {
       repositories: [
@@ -440,8 +434,7 @@ describe('GithubApiService tests', () => {
         ],
       });
 
-    const parsed = gitUrlParse('https://github.com/bob');
-    const result = await githubApiService.getGithubRepositories(parsed);
+    const result = await githubApiService.getRepositoriesFromIntegrations();
 
     const expected_response = {
       repositories: [
@@ -516,8 +509,7 @@ describe('GithubApiService tests', () => {
       data: [],
     });
 
-    const parsed = gitUrlParse('https://github.com/bob');
-    const result = await githubApiService.getGithubRepositories(parsed);
+    const result = await githubApiService.getRepositoriesFromIntegrations();
 
     const expected_response = {
       repositories: [
@@ -542,9 +534,8 @@ describe('GithubApiService tests', () => {
     expect(result).toEqual(expected_response);
   });
   it('throws an error if no integration matching the inputted github account is found', async () => {
-    const parsed = gitUrlParse('https://github.company.com/bob');
     await expect(
-      githubApiService.getGithubRepositories(parsed),
+      githubApiService.getRepositoriesFromIntegrations(),
     ).rejects.toThrow(
       'There is no GitHub integration that matches https://github.company.com/bob. Please add a configuration entry for it under integrations.github.',
     );

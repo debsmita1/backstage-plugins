@@ -586,7 +586,7 @@ describe('CustomSingleInstanceGithubCredentialsProvider tests', () => {
       } as RestEndpointMethodTypes['apps']['createInstallationAccessToken']['response']);
 
       const response = await multipleGithubApps.getAllCredentials({
-        url: 'https://github.com/backstage',
+        host: 'github.com',
       });
       const expected_response = [
         {
@@ -680,7 +680,7 @@ describe('CustomSingleInstanceGithubCredentialsProvider tests', () => {
       } as RestEndpointMethodTypes['apps']['createInstallationAccessToken']['response']);
 
       const response = await multipleGithubApps.getAllCredentials({
-        url: 'https://github.com/backstage',
+        host: 'github.com',
       });
 
       // The expected errors
@@ -763,10 +763,10 @@ describe('CustomSingleInstanceGithubCredentialsProvider tests', () => {
       } as RestEndpointMethodTypes['apps']['createInstallationAccessToken']['response']);
 
       await multipleGithubApps.getAllCredentials({
-        url: 'https://github.com/backstage',
+        host: 'github.com',
       });
       await multipleGithubApps.getAllCredentials({
-        url: 'https://github.com/backstage',
+        host: 'github.com',
       });
 
       expect(octokit.apps.listInstallations.mock.calls.length).toBe(3);
@@ -834,10 +834,10 @@ describe('CustomSingleInstanceGithubCredentialsProvider tests', () => {
         } as RestEndpointMethodTypes['apps']['createInstallationAccessToken']['response']);
 
       await multipleGithubApps.getAllCredentials({
-        url: 'https://github.com/backstage',
+        host: 'github.com',
       });
       await multipleGithubApps.getAllCredentials({
-        url: 'https://github.com/backstage',
+        host: 'github.com',
       });
 
       expect(octokit.apps.listInstallations.mock.calls.length).toBe(4);
@@ -1058,7 +1058,7 @@ describe('CustomGithubCredentialsProvider tests', () => {
         CustomGithubCredentialsProvider.fromIntegrations(customIntegrations);
 
       const githubAccessTokens = await provider.getAllCredentials({
-        url: 'https://github.com/backstage',
+        host: 'github.com',
       });
       // The expected errors
       const someError = new Error('Some error occurred');
@@ -1098,7 +1098,7 @@ describe('CustomGithubCredentialsProvider tests', () => {
         CustomGithubCredentialsProvider.fromIntegrations(integrations);
       await expect(
         provider.getAllCredentials({
-          url: 'https://invalid.com/test',
+          host: 'invalid.com',
         }),
       ).rejects.toThrow(
         'There is no GitHub integration that matches https://invalid.com/test. Please add a configuration for an integration.',

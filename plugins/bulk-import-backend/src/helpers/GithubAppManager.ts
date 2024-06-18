@@ -381,7 +381,6 @@ export class CustomSingleInstanceGithubCredentialsProvider
     const parsed = gitUrlParse(opts.url);
 
     const owner = parsed.owner || parsed.name;
-    const repo = parsed.owner ? parsed.name : undefined;
 
     let type: GithubCredentialType = 'app';
     let token = await this.githubAppsCredentialManager.getAppToken(owner);

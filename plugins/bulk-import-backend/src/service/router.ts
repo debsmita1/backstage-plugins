@@ -36,11 +36,11 @@ import { createPermissionIntegrationRouter } from '@backstage/plugin-permission-
 import { fullFormats } from 'ajv-formats/dist/formats';
 import express from 'express';
 import Router from 'express-promise-router';
-import gitUrlParse from 'git-url-parse';
+// import gitUrlParse from 'git-url-parse';
 import { Context, OpenAPIBackend, Request } from 'openapi-backend';
 import { Logger } from 'winston';
 
-import crypto from 'crypto';
+// import crypto from 'crypto';
 
 import { CatalogInfoGenerator } from '../helpers/catalogInfoGenerator';
 import { Paths } from '../openapi';
@@ -92,8 +92,14 @@ async function permissionCheck(
 export async function createRouter(
   options: RouterOptions,
 ): Promise<express.Router> {
-  const { logger, permissions, config, discovery, identity, catalogApi } =
-    options;
+  const {
+    logger,
+    permissions,
+    config,
+    discovery,
+    // identity,
+    catalogApi,
+  } = options;
 
   const githubApiService = new GithubApiService(logger, config);
   const catalogInfoGenerator = new CatalogInfoGenerator(logger, discovery);

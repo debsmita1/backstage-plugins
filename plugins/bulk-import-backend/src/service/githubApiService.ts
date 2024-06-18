@@ -26,7 +26,7 @@ import gitUrlParse from 'git-url-parse';
 import { Logger } from 'winston';
 
 import { CustomGithubCredentialsProvider } from '../helpers';
-import { Components } from '../openapi';
+// import { Components } from '../openapi';
 import {
   ExtendedGithubCredentials,
   GithubAppCredentials,
@@ -348,6 +348,10 @@ export class GithubApiService {
         path: fileName,
         ref: branchName,
       });
+      // Response can either be a directory (array of files) or a single file element. In this case, we ensure it has the sha property to update it.
+      if (Array.isArray(existingFile) || !('sha' in existingFile)) {
+        throw new Error(`The content at path ${fileName} is not a file or the response from GitHub does not contain the 'sha' property.`);
+      }
       // If the file already exists, update it
       await octo.rest.repos.createOrUpdateFileContents({
         owner,
@@ -358,7 +362,7 @@ export class GithubApiService {
         sha: existingFile.sha,
         branch: branchName,
       });
-    } catch (error) {
+    } catch (error: any) {
       if (error.status === 404) {
         // If the file does not exist, create it
         await octo.rest.repos.createOrUpdateFileContents({
@@ -476,7 +480,7 @@ export class GithubApiService {
             repo,
             ref: `heads/${branchName}`,
           });
-        } catch (error) {
+        } catch (error: any) {
           if (error.status === 404) {
             await octo.rest.git.createRef({
               owner,
@@ -511,7 +515,7 @@ export class GithubApiService {
           prNumber: pullRequestResponse.data.number,
           prUrl: pullRequestResponse.data.html_url,
         };
-      } catch (e) {
+      } catch (e: any) {
         logger.warn(`Couldn't create PR in ${input.repoUrl}: ${e}`);
         errors.push(e.message);
       }
