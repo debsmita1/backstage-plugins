@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import {getVoidLogger} from '@backstage/backend-common';
-import {CatalogClient} from '@backstage/catalog-client';
-import {ConfigReader} from '@backstage/config';
+import { getVoidLogger } from '@backstage/backend-common';
+import { CatalogClient } from '@backstage/catalog-client';
+import { ConfigReader } from '@backstage/config';
 import {
   AuthorizeResult,
   PermissionEvaluator,
@@ -25,10 +25,10 @@ import {
 import express from 'express';
 import request from 'supertest';
 
-import {CatalogInfoGenerator} from '../helpers';
-import {GithubRepositoryResponse} from '../types';
-import {GithubApiService} from './githubApiService';
-import {createRouter} from './router';
+import { CatalogInfoGenerator } from '../helpers';
+import { GithubRepositoryResponse } from '../types';
+import { GithubApiService } from './githubApiService';
+import { createRouter } from './router';
 
 const mockedAuthorize: jest.MockedFunction<PermissionEvaluator['authorize']> =
   jest.fn();
@@ -67,18 +67,22 @@ const mockAddLocation = jest.fn();
 const mockValidateEntity = jest.fn();
 const mockGetEntitiesByRefs = jest.fn();
 
-const mockCatalogClient = {
-  getEntitiesByRefs: mockGetEntitiesByRefs,
-  validateEntity: mockValidateEntity,
-  addLocation: mockAddLocation,
-} as unknown as CatalogClient;
-
-const configuration = new ConfigReader({});
+const configuration = new ConfigReader({
+  app: {
+    baseUrl: 'https://my-backstage-app.example.com',
+  },
+});
 
 describe('createRouter', () => {
   let app: express.Express;
+  let mockCatalogClient: CatalogClient;
 
   beforeAll(async () => {
+    mockCatalogClient = {
+      getEntitiesByRefs: mockGetEntitiesByRefs,
+      validateEntity: mockValidateEntity,
+      addLocation: mockAddLocation,
+    } as unknown as CatalogClient;
     const router = await createRouter({
       logger: getVoidLogger(),
       config: configuration,
@@ -99,7 +103,7 @@ describe('createRouter', () => {
       const response = await request(app).get('/ping');
 
       expect(response.status).toEqual(200);
-      expect(response.body).toEqual({status: 'ok'});
+      expect(response.body).toEqual({ status: 'ok' });
     });
   });
 
@@ -342,7 +346,11 @@ describe('createRouter', () => {
           } = {};
           switch (input.repoUrl) {
             case 'https://github.com/my-ent-org-1/B':
-              return Promise.reject(new Error("could not find out if there is an import PR open on this repo"));
+              return Promise.reject(
+                new Error(
+                  'could not find out if there is an import PR open on this repo',
+                ),
+              );
             case 'https://github.com/my-ent-org-2/A':
               resp.prNum = 987;
               resp.prUrl = `https://github.com/my-ent-org-2/A/pull/${resp.prNum}`;
@@ -354,60 +362,136 @@ describe('createRouter', () => {
         });
       jest
         .spyOn(CatalogInfoGenerator.prototype, 'listCatalogUrlLocations')
-        .mockResolvedValue(["https://github.com/my-ent-org-1/A/blob/dev/catalog-info.yaml"]);
+        .mockResolvedValue([
+          'https://github.com/my-ent-org-1/A/blob/dev/catalog-info.yaml',
+        ]);
 
       const response = await request(app).get('/imports');
       expect(response.status).toEqual(200);
       expect(response.body).toEqual([
         {
-          approvalTool: "GIT",
-          id: "my-ent-org-1/A",
+          approvalTool: 'GIT',
+          id: 'my-ent-org-1/A',
           repository: {
-            defaultBranch: "dev",
+            defaultBranch: 'dev',
             errors: [],
-            id: "my-ent-org-1/A",
-            name: "A",
-            organization: "my-ent-org-1",
-            url: "https://github.com/my-ent-org-1/A"
+            id: 'my-ent-org-1/A',
+            name: 'A',
+            organization: 'my-ent-org-1',
+            url: 'https://github.com/my-ent-org-1/A',
           },
-          status: "ADDED"
+          status: 'ADDED',
         },
         {
-          approvalTool: "GIT",
+          approvalTool: 'GIT',
           errors: [
-            "could not find out if there is an import PR open on this repo"
+            'could not find out if there is an import PR open on this repo',
           ],
-          id: "my-ent-org-1/B",
+          id: 'my-ent-org-1/B',
           repository: {
-            defaultBranch: "main",
+            defaultBranch: 'main',
             errors: [],
-            id: "my-ent-org-1/B",
-            name: "B",
-            organization: "my-ent-org-1",
-            url: "https://github.com/my-ent-org-1/B"
+            id: 'my-ent-org-1/B',
+            name: 'B',
+            organization: 'my-ent-org-1',
+            url: 'https://github.com/my-ent-org-1/B',
           },
-          status: "PR_ERROR"
+          status: 'PR_ERROR',
         },
         {
-          approvalTool: "GIT",
-          id: "my-ent-org-2/A",
+          approvalTool: 'GIT',
+          id: 'my-ent-org-2/A',
           github: {
             pullRequest: {
               number: 987,
-              url: "https://github.com/my-ent-org-2/A/pull/987"
-            }
+              url: 'https://github.com/my-ent-org-2/A/pull/987',
+            },
           },
           repository: {
-            defaultBranch: "dev",
+            defaultBranch: 'dev',
             errors: [],
-            id: "my-ent-org-2/A",
-            name: "A",
-            organization: "my-ent-org-2",
-            url: "https://github.com/my-ent-org-2/A"
+            id: 'my-ent-org-2/A',
+            name: 'A',
+            organization: 'my-ent-org-2',
+            url: 'https://github.com/my-ent-org-2/A',
           },
-          status: "WAIT_PR_APPROVAL"
+          status: 'WAIT_PR_APPROVAL',
         },
       ]);
+    });
+  });
+
+  describe('POST /imports', () => {
+    it('returns 400 if there is nothing in request body', async () => {
+      mockedPermissionQuery.mockImplementation(allowAll);
+      const response = await request(app).post('/imports').send([]);
+      expect(response.status).toEqual(400);
+    });
+
+    it('returns 202 with appropriate import statuses', async () => {
+      mockedPermissionQuery.mockImplementation(allowAll);
+      mockCatalogClient.addLocation = jest
+        .fn()
+        .mockImplementation(
+          (location: { type: string; target: string; dryRun: boolean }) => {
+            let exists = false;
+            switch (location.target) {
+              case 'https://github.com/my-org-ent-1/does-not-exist-in-catalog-but-errors-with-pr-creation/blob/dev/catalog-info.yaml':
+              case 'https://github.com/my-org-ent-2/animated-happiness/blob/main/catalog-info.yaml':
+                exists = false;
+                break;
+              case 'https://github.com/my-org-ent-1/java-quarkus-starter/blob/main/catalog-info.yaml':
+                exists = true;
+                break;
+              default:
+                break;
+            }
+            return Promise.resolve({ exists: exists });
+          },
+        );
+
+      const response = await request(app)
+        .post('/imports')
+        .send([
+          {
+            repository: {
+              url: 'https://github.com/my-org-ent-1/does-not-exist-in-catalog-but-errors-with-pr-creation',
+              defaultBranch: 'dev',
+            },
+          },
+          {
+            repository: {
+              url: 'https://github.com/my-org-ent-2/animated-happiness',
+              defaultBranch: 'main',
+            },
+            catalogInfoContent: `---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: animated-happiness
+  annotations:
+    github.com/project-slug: my-org-ent-2/animated-happiness
+spec:
+  type: other
+  lifecycle: unknown
+  owner: my-org-ent-2
+---
+`,
+            github: {
+              pullRequest: {
+                title: 'Custom PR title: catalog-info.yaml',
+              },
+            },
+          },
+          {
+            repository: {
+              url: 'https://github.com/my-org-ent-1/java-quarkus-starter',
+              defaultBranch: 'main',
+            },
+          },
+        ]);
+      expect(response.status).toEqual(202);
+      // TODO To be continued
     });
   });
 });

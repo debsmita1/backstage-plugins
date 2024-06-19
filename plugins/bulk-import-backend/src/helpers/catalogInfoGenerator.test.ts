@@ -152,7 +152,8 @@ metadata:
     github.com/project-slug: ${org}/${name}
 spec:
   type: other
-  lifecycle: unknown`;
+  lifecycle: unknown
+  owner: ${org}`;
 }
 
 // function mockAnalyzeLocationResponse(

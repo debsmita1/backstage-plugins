@@ -168,7 +168,7 @@ export async function createRouter(
         req.header('authorization'),
       );
       await permissionCheck(permissions, backstageToken);
-      const imports = await createImportJobs(
+      const response = await createImportJobs(
         logger,
         config,
         catalogApi,
@@ -176,7 +176,7 @@ export async function createRouter(
         catalogInfoGenerator,
         c.request.requestBody,
       );
-      return res.json(imports);
+      return res.status(response.statusCode).json(response.responseBody);
     },
   );
 
