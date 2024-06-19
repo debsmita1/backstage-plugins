@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import { getVoidLogger } from '@backstage/backend-common';
-import { CatalogClient } from '@backstage/catalog-client';
-import { ConfigReader } from '@backstage/config';
+import {getVoidLogger} from '@backstage/backend-common';
+import {CatalogClient} from '@backstage/catalog-client';
+import {ConfigReader} from '@backstage/config';
 import {
   AuthorizeResult,
   PermissionEvaluator,
@@ -25,10 +25,10 @@ import {
 import express from 'express';
 import request from 'supertest';
 
-import { CatalogInfoGenerator } from '../helpers';
-import { GithubRepositoryResponse } from '../types';
-import { GithubApiService } from './githubApiService';
-import { createRouter } from './router';
+import {CatalogInfoGenerator} from '../helpers';
+import {GithubRepositoryResponse} from '../types';
+import {GithubApiService} from './githubApiService';
+import {createRouter} from './router';
 
 const mockedAuthorize: jest.MockedFunction<PermissionEvaluator['authorize']> =
   jest.fn();
@@ -99,7 +99,7 @@ describe('createRouter', () => {
       const response = await request(app).get('/ping');
 
       expect(response.status).toEqual(200);
-      expect(response.body).toEqual({ status: 'ok' });
+      expect(response.body).toEqual({status: 'ok'});
     });
   });
 
@@ -262,6 +262,152 @@ describe('createRouter', () => {
       expect(response.body).toEqual({
         errors: ['Github App with ID 1234567890 returned an error'],
       });
+    });
+  });
+
+  describe('GET /imports', () => {
+    it('returns 200 with empty list when there is nothing in catalog yet and no open PR for each repo', async () => {
+      mockedPermissionQuery.mockImplementation(allowAll);
+
+      jest
+        .spyOn(GithubApiService.prototype, 'getRepositoriesFromIntegrations')
+        .mockResolvedValue({
+          repositories: [
+            {
+              name: 'A',
+              full_name: 'my-ent-org-1/A',
+              url: 'https://api.github.com/repos/my-ent-org-1/A',
+              html_url: 'https://github.com/my-ent-org-1/A',
+              default_branch: 'master',
+            },
+            {
+              name: 'B',
+              full_name: 'my-ent-org-1/B',
+              url: 'https://api.github.com/repos/my-ent-org-1/B',
+              html_url: 'https://github.com/my-ent-org-1/B',
+              default_branch: 'main',
+            },
+          ],
+          errors: [],
+        });
+      jest
+        .spyOn(GithubApiService.prototype, 'findImportOpenPr')
+        .mockResolvedValue({});
+      jest
+        .spyOn(CatalogInfoGenerator.prototype, 'listCatalogUrlLocations')
+        .mockResolvedValue([]);
+
+      const response = await request(app).get('/imports');
+      expect(response.status).toEqual(200);
+      expect(response.body).toEqual([]);
+    });
+
+    it('returns 200 with appropriate import status', async () => {
+      mockedPermissionQuery.mockImplementation(allowAll);
+
+      jest
+        .spyOn(GithubApiService.prototype, 'getRepositoriesFromIntegrations')
+        .mockResolvedValue({
+          repositories: [
+            {
+              name: 'A',
+              full_name: 'my-ent-org-1/A',
+              url: 'https://api.github.com/repos/my-ent-org-1/A',
+              html_url: 'https://github.com/my-ent-org-1/A',
+              default_branch: 'dev',
+            },
+            {
+              name: 'B',
+              full_name: 'my-ent-org-1/B',
+              url: 'https://api.github.com/repos/my-ent-org-1/B',
+              html_url: 'https://github.com/my-ent-org-1/B',
+              default_branch: 'main',
+            },
+            {
+              name: 'A',
+              full_name: 'my-ent-org-2/A',
+              url: 'https://api.github.com/repos/my-ent-org-2/A',
+              html_url: 'https://github.com/my-ent-org-2/A',
+              default_branch: 'dev',
+            },
+          ],
+          errors: [],
+        });
+      jest
+        .spyOn(GithubApiService.prototype, 'findImportOpenPr')
+        .mockImplementation((_logger, input) => {
+          const resp: {
+            prNum?: number;
+            prUrl?: string;
+          } = {};
+          switch (input.repoUrl) {
+            case 'https://github.com/my-ent-org-1/B':
+              return Promise.reject(new Error("could not find out if there is an import PR open on this repo"));
+            case 'https://github.com/my-ent-org-2/A':
+              resp.prNum = 987;
+              resp.prUrl = `https://github.com/my-ent-org-2/A/pull/${resp.prNum}`;
+              break;
+            default:
+              break;
+          }
+          return Promise.resolve(resp);
+        });
+      jest
+        .spyOn(CatalogInfoGenerator.prototype, 'listCatalogUrlLocations')
+        .mockResolvedValue(["https://github.com/my-ent-org-1/A/blob/dev/catalog-info.yaml"]);
+
+      const response = await request(app).get('/imports');
+      expect(response.status).toEqual(200);
+      expect(response.body).toEqual([
+        {
+          approvalTool: "GIT",
+          id: "my-ent-org-1/A",
+          repository: {
+            defaultBranch: "dev",
+            errors: [],
+            id: "my-ent-org-1/A",
+            name: "A",
+            organization: "my-ent-org-1",
+            url: "https://github.com/my-ent-org-1/A"
+          },
+          status: "ADDED"
+        },
+        {
+          approvalTool: "GIT",
+          errors: [
+            "could not find out if there is an import PR open on this repo"
+          ],
+          id: "my-ent-org-1/B",
+          repository: {
+            defaultBranch: "main",
+            errors: [],
+            id: "my-ent-org-1/B",
+            name: "B",
+            organization: "my-ent-org-1",
+            url: "https://github.com/my-ent-org-1/B"
+          },
+          status: "PR_ERROR"
+        },
+        {
+          approvalTool: "GIT",
+          id: "my-ent-org-2/A",
+          github: {
+            pullRequest: {
+              number: 987,
+              url: "https://github.com/my-ent-org-2/A/pull/987"
+            }
+          },
+          repository: {
+            defaultBranch: "dev",
+            errors: [],
+            id: "my-ent-org-2/A",
+            name: "A",
+            organization: "my-ent-org-2",
+            url: "https://github.com/my-ent-org-2/A"
+          },
+          status: "WAIT_PR_APPROVAL"
+        },
+      ]);
     });
   });
 });

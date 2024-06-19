@@ -40,7 +40,14 @@ paths:
                 multipleRepos:
                   $ref: '#/components/examples/multipleRepos'
         500:
-          description: Generic error
+          description: Generic error when there are errors and no repository is returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RepositoryList'
+              examples:
+                repositoryListErrors:
+                  $ref: '#/components/examples/repositoryListErrors'
 
   /imports:
     get:
@@ -274,6 +281,13 @@ components:
             defaultBranch: 'trunk'
             url: 'https://ghe.example.com/my-other-org-2/project-one'
             organization: 'my-other-org-2'
+
+    repositoryListErrors:
+      summary: Errors when listing repositories
+      value:
+        errors:
+          - 'Github App with ID 2 failed spectacularly'
+        repositories: []
 
     twoImports:
       summary: Two import job requests

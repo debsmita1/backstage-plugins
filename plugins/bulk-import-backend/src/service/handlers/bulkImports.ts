@@ -1,19 +1,20 @@
-import { CatalogApi } from '@backstage/catalog-client';
-import { Config } from '@backstage/config';
+import {CatalogApi} from '@backstage/catalog-client';
+import {Config} from '@backstage/config';
 
 import gitUrlParse from 'git-url-parse';
-import { Logger } from 'winston';
+import {Logger} from 'winston';
 
-import { CatalogInfoGenerator } from '../../helpers';
-import { Components, Paths } from '../../openapi.d';
-import { GithubApiService } from '../githubApiService';
-import { findAllRepositories } from './repositories';
+import {CatalogInfoGenerator} from '../../helpers';
+import {Components, Paths} from '../../openapi.d';
+import {GithubApiService} from '../githubApiService';
+import {findAllRepositories} from './repositories';
+import {HandlerResponse} from "./handlers";
 
 export async function findAllImports(
   logger: Logger,
   githubApiService: GithubApiService,
   catalogInfoGenerator: CatalogInfoGenerator,
-): Promise<Paths.FindAllImports.Responses.$200> {
+): Promise<HandlerResponse<Components.Schemas.Import[]>> {
   logger.debug('Getting all bulk import jobs..');
   const result: Components.Schemas.Import[] = [];
   const catalogLocations = await catalogInfoGenerator.listCatalogUrlLocations();
@@ -23,7 +24,7 @@ export async function findAllImports(
     catalogInfoGenerator,
     false,
   );
-  for (const repo of repos) {
+  for (const repo of repos.responseBody?.repositories ?? []) {
     if (!repo.url) {
       continue;
     }
@@ -82,7 +83,10 @@ export async function findAllImports(
     }
   }
 
-  return result;
+  return {
+    statusCode: 200,
+    responseBody: result
+  };
 }
 
 export async function createImportJobs(

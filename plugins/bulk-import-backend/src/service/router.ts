@@ -148,12 +148,12 @@ export async function createRouter(
         req.header('authorization'),
       );
       await permissionCheck(permissions, backstageToken);
-      const imports = await findAllImports(
+      const response = await findAllImports(
         logger,
         githubApiService,
         catalogInfoGenerator,
       );
-      return res.json(imports);
+      return res.status(response.statusCode).json(response.responseBody);
     },
   );
 
