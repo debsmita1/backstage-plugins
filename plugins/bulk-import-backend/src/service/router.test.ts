@@ -26,18 +26,9 @@ import express from 'express';
 import request from 'supertest';
 
 import { CatalogInfoGenerator } from '../helpers';
-import {
-  CatalogInfoEntities,
-  GithubRepositoryResponse,
-  ValidatedEntity,
-} from '../types';
+import { GithubRepositoryResponse } from '../types';
 import { GithubApiService } from './githubApiService';
 import { createRouter } from './router';
-
-const generateDefaultCatalogInfoContent = jest.fn();
-
-CatalogInfoGenerator.prototype.generateDefaultCatalogInfoContent =
-  generateDefaultCatalogInfoContent;
 
 const mockedAuthorize: jest.MockedFunction<PermissionEvaluator['authorize']> =
   jest.fn();
@@ -56,8 +47,8 @@ const mockIdentityClient = {
   })),
 };
 const mockDiscovery = {
-  getBaseUrl: jest.fn(),
-  getExternalBaseUrl: jest.fn(),
+  getBaseUrl: jest.fn().mockResolvedValue('https://api.example.com'),
+  getExternalBaseUrl: jest.fn().mockResolvedValue('https://api.example.com'),
 };
 
 const permissionEvaluator: PermissionEvaluator = {
@@ -84,53 +75,6 @@ const mockCatalogClient = {
 
 const configuration = new ConfigReader({});
 
-function createEntity(
-  name: string,
-  html_url: string,
-  kind: string,
-  branch: string,
-  namespace: string = 'default',
-): ValidatedEntity {
-  if (kind === 'Location') {
-    const catalogInfoLocation = `${html_url}/blob/${branch}/catalog-info.yaml`;
-    return {
-      apiVersion: 'backstage.io/v1alpha1',
-      kind: 'Location',
-      metadata: {
-        name: name,
-        namespace: namespace,
-        labels: {
-          'bulk-import/uuid': 'bulk-import-session-uuid',
-          'bulk-import/date-created': '2024-02-29T16-50-40.025Z',
-        },
-      },
-      spec: {
-        target: `${catalogInfoLocation}`,
-      },
-    };
-  }
-  return {
-    apiVersion: 'backstage.io/v1alpha1',
-    kind: kind,
-    metadata: {
-      // Default to the repository name if no name is provided
-      name: name,
-      namespace: namespace,
-      title: name,
-      links: [
-        {
-          url: html_url,
-          title: 'Repository Link',
-        },
-      ],
-    },
-    spec: {
-      type: 'unknown',
-      lifecycle: 'unknown',
-      owner: 'unknown',
-    },
-  };
-}
 describe('createRouter', () => {
   let app: express.Express;
 
@@ -160,124 +104,67 @@ describe('createRouter', () => {
   });
 
   describe('GET /repositories', () => {
-    it('returns 400 when no owner field is provided in the body', async () => {
-      mockedPermissionQuery.mockImplementation(allowAll);
-      const response = await request(app).get('/repositories').send();
-      expect(response.status).toEqual(400);
-      expect(response.body).toEqual({
-        error:
-          'No owner field provided. Please provide a valid github URL to the user or organization.',
-      });
-    });
-
-    it('returns 400 when owner field is not a valid URL', async () => {
-      mockedPermissionQuery.mockImplementation(allowAll);
-      const response = await request(app).get('/repositories');
-      expect(response.status).toEqual(400);
-      expect(response.body).toEqual({
-        error:
-          'Invalid owner field provided. Please provide a valid github URL to the user or organization.',
-      });
-    });
-    it('returns 404 when owner field does not have a corresponding github integration', async () => {
-      mockedPermissionQuery.mockImplementation(allowAll);
-      const response = await request(app)
-        .get('/repositories')
-        .send({ owner: 'https://github.com/test' });
-      expect(response.status).toEqual(404);
-      expect(response.body).toEqual({
-        errors: [],
-        repositories: [],
-      });
-    });
     it('returns 200 when repositories are fetched without errors', async () => {
-      const githubApiServiceResponse: GithubRepositoryResponse = {
-        repositories: [
-          {
-            name: 'A',
-            full_name: 'backstage/A',
-            url: 'https://api.github.com/repos/backstage/A',
-            html_url: 'https://github.com/backstage/A',
-            default_branch: 'master',
-          },
-          {
-            name: 'B',
-            full_name: 'backstage/B',
-            url: 'https://api.github.com/repos/backstage/B',
-            html_url: 'https://github.com/backstage/B',
-            default_branch: 'main',
-          },
-        ],
-        errors: [],
-      };
       mockedPermissionQuery.mockImplementation(allowAll);
-      const getRepositoriesFromIntegrations = jest
-        .fn()
-        .mockReturnValue(githubApiServiceResponse);
-      GithubApiService.prototype.getRepositoriesFromIntegrations =
-        getRepositoriesFromIntegrations;
 
-      mockAddLocation
-        .mockReturnValueOnce({ exists: false })
-        .mockReturnValue({ exists: true });
-      const existsList: boolean[] = [false, true];
-      mockValidateEntity.mockReturnValue({ valid: true });
-      mockGetEntitiesByRefs.mockReturnValue({ items: [undefined] });
-
-      const expectedEntities: CatalogInfoEntities[] =
-        githubApiServiceResponse.repositories.map(repo => {
-          return {
-            entity: createEntity(
-              repo.name,
-              repo.html_url,
-              'Component',
-              repo.default_branch,
-            ),
-            locationEntity: createEntity(
-              repo.name,
-              repo.html_url,
-              'Location',
-              repo.default_branch,
-            ),
-          };
+      jest
+        .spyOn(GithubApiService.prototype, 'getRepositoriesFromIntegrations')
+        .mockResolvedValue({
+          repositories: [
+            {
+              name: 'A',
+              full_name: 'my-ent-org-1/A',
+              url: 'https://api.github.com/repos/my-ent-org-1/A',
+              html_url: 'https://github.com/my-ent-org-1/A',
+              default_branch: 'master',
+            },
+            {
+              name: 'B',
+              full_name: 'my-ent-org-1/B',
+              url: 'https://api.github.com/repos/my-ent-org-1/B',
+              html_url: 'https://github.com/my-ent-org-1/B',
+              default_branch: 'main',
+            },
+          ],
+          errors: [],
         });
-      generateDefaultCatalogInfoContent
-        .mockReturnValueOnce(expectedEntities[0])
-        .mockReturnValue(expectedEntities[1]);
+      jest
+        .spyOn(GithubApiService.prototype, 'findImportOpenPr')
+        .mockResolvedValue({});
+      jest
+        .spyOn(CatalogInfoGenerator.prototype, 'listCatalogUrlLocations')
+        .mockResolvedValue([]);
 
-      const response = await request(app)
-        .get('/repositories')
-        .send({ owner: 'https://github.com/backstage' });
+      const response = await request(app).get('/repositories');
       expect(response.status).toEqual(200);
       expect(response.body).toEqual({
-        ...githubApiServiceResponse,
-        repositories: githubApiServiceResponse.repositories.map(
-          (repo, index) => {
-            return existsList[index]
-              ? {
-                  ...repo,
-                  exists: existsList[index],
-                }
-              : {
-                  ...repo,
-                  entity: createEntity(
-                    repo.name,
-                    repo.html_url,
-                    'Component',
-                    repo.default_branch,
-                  ),
-                  locationEntity: createEntity(
-                    repo.name,
-                    repo.html_url,
-                    'Location',
-                    repo.default_branch,
-                  ),
-                };
+        errors: [],
+        repositories: [
+          {
+            id: 'my-ent-org-1/A',
+            name: 'A',
+            organization: 'my-ent-org-1',
+            url: 'https://github.com/my-ent-org-1/A',
+            importStatus: null,
+            errors: [],
+            defaultBranch: 'master',
           },
-        ),
+          {
+            id: 'my-ent-org-1/B',
+            name: 'B',
+            organization: 'my-ent-org-1',
+            url: 'https://github.com/my-ent-org-1/B',
+            importStatus: null,
+            errors: [],
+            defaultBranch: 'main',
+          },
+        ],
       });
     });
-    it('returns 207 when repositories are fetched, but errors also occurred', async () => {
+
+    it('returns 200 with the errors in the body when repositories are fetched, but errors have occurred', async () => {
+      mockedPermissionQuery.mockImplementation(allowAll);
+
       const githubApiServiceResponse: GithubRepositoryResponse = {
         repositories: [
           {
@@ -306,98 +193,75 @@ describe('createRouter', () => {
           },
         ],
       };
-      mockedPermissionQuery.mockImplementation(allowAll);
-      const getRepositoriesFromIntegrations = jest
-        .fn()
-        .mockReturnValue(githubApiServiceResponse);
-      GithubApiService.prototype.getRepositoriesFromIntegrations =
-        getRepositoriesFromIntegrations;
+      jest
+        .spyOn(GithubApiService.prototype, 'getRepositoriesFromIntegrations')
+        .mockResolvedValue(githubApiServiceResponse);
+      jest
+        .spyOn(GithubApiService.prototype, 'findImportOpenPr')
+        .mockResolvedValue({});
+      jest
+        .spyOn(CatalogInfoGenerator.prototype, 'listCatalogUrlLocations')
+        .mockResolvedValue([]);
 
-      mockedPermissionQuery.mockImplementation(allowAll);
-      mockAddLocation
-        .mockReturnValueOnce({ exists: false })
-        .mockReturnValue({ exists: true });
-      const existsList: boolean[] = [false, true];
+      const response = await request(app).get('/repositories');
 
-      const expectedEntities: CatalogInfoEntities[] =
-        githubApiServiceResponse.repositories.map(repo => {
-          return {
-            entity: createEntity(
-              repo.name,
-              repo.html_url,
-              'Component',
-              repo.default_branch,
-            ),
-            locationEntity: createEntity(
-              repo.name,
-              repo.html_url,
-              'Location',
-              repo.default_branch,
-            ),
-          };
-        });
-      generateDefaultCatalogInfoContent
-        .mockReturnValueOnce(expectedEntities[0])
-        .mockReturnValue(expectedEntities[1]);
-
-      const response = await request(app)
-        .get('/repositories')
-        .send({ owner: 'https://github.com/test' });
-
-      expect(response.status).toEqual(207);
+      expect(response.status).toEqual(200);
       expect(response.body).toEqual({
-        ...githubApiServiceResponse,
-        repositories: githubApiServiceResponse.repositories.map(
-          (repo, index) => {
-            return existsList[index]
-              ? {
-                  ...repo,
-                  exists: existsList[index],
-                }
-              : {
-                  ...repo,
-                  entity: createEntity(
-                    repo.name,
-                    repo.html_url,
-                    'Component',
-                    repo.default_branch,
-                  ),
-                  locationEntity: createEntity(
-                    repo.name,
-                    repo.html_url,
-                    'Location',
-                    repo.default_branch,
-                  ),
-                };
-          },
-        ),
-      });
-    });
-    it('returns 207 when one or more errors are returned with no successful repository fetches', async () => {
-      const githubApiServiceResponse: GithubRepositoryResponse = {
-        repositories: [],
-        errors: [
+        errors: ['Github App with ID 2 failed spectacularly'],
+        repositories: [
           {
-            error: {
-              name: 'customError',
-              message: 'Github App with ID 2 failed spectacularly',
-            },
-            type: 'app',
-            appId: 2,
+            defaultBranch: 'master',
+            errors: [],
+            id: 'backstage/A',
+            importStatus: null,
+            name: 'A',
+            organization: 'backstage',
+            url: 'https://github.com/backstage/A',
+          },
+          {
+            defaultBranch: 'main',
+            errors: [],
+            id: 'backstage/B',
+            importStatus: null,
+            name: 'B',
+            organization: 'backstage',
+            url: 'https://github.com/backstage/B',
           },
         ],
-      };
-      mockedPermissionQuery.mockImplementation(allowAll);
-      const getRepositoriesFromIntegrations = jest
-        .fn()
-        .mockReturnValue(githubApiServiceResponse);
-      GithubApiService.prototype.getRepositoriesFromIntegrations =
-        getRepositoriesFromIntegrations;
+      });
+    });
 
+    it('returns 500 when one or more errors are returned with no successful repository fetches', async () => {
       mockedPermissionQuery.mockImplementation(allowAll);
+
+      jest
+        .spyOn(GithubApiService.prototype, 'getRepositoriesFromIntegrations')
+        .mockResolvedValue({
+          repositories: [],
+          errors: [
+            {
+              error: {
+                name: 'some error',
+                message: 'Github App with ID 1234567890 returned an error',
+              },
+              type: 'app',
+              appId: 2,
+            },
+          ],
+        });
+      jest
+        .spyOn(GithubApiService.prototype, 'findImportOpenPr')
+        .mockResolvedValue({});
+      jest
+        .spyOn(CatalogInfoGenerator.prototype, 'listCatalogUrlLocations')
+        .mockResolvedValue([]);
+
       const response = await request(app).get('/repositories');
-      expect(response.status).toEqual(207);
-      expect(response.body).toEqual(githubApiServiceResponse);
+
+      expect(response.status).toEqual(500);
+      expect(response.body).toEqual({
+        errors: ['Github App with ID 1234567890 returned an error'],
+      });
     });
   });
 });

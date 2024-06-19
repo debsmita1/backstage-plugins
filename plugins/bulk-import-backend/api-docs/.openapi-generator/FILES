@@ -12,5 +12,6 @@ Models/Import_github.md
 Models/Import_github_pullRequest.md
 Models/Import_repository.md
 Models/Repository.md
+Models/RepositoryList.md
 Models/ping_200_response.md
 README.md

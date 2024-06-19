@@ -9,7 +9,7 @@ All URIs are relative to *http://localhost*
 
 <a name="findAllRepositories"></a>
 # **findAllRepositories**
-> List findAllRepositories()
+> RepositoryList findAllRepositories()
 
 Fetch Organization Repositories accessible by Backstage Github Integrations
 
@@ -18,7 +18,7 @@ This endpoint does not need any parameter.
 
 ### Return type
 
-[**List**](../Models/Repository.md)
+[**RepositoryList**](../Models/RepositoryList.md)
 
 ### Authorization
 

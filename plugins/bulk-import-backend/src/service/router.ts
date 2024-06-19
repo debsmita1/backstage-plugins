@@ -43,7 +43,7 @@ import { Logger } from 'winston';
 // import crypto from 'crypto';
 
 import { CatalogInfoGenerator } from '../helpers/catalogInfoGenerator';
-import { Paths } from '../openapi';
+import { Paths } from '../openapi.d';
 import { openApiDocument } from '../openapidocument';
 import { GithubApiService } from './githubApiService';
 import { createImportJobs, findAllImports } from './handlers/bulkImports';
@@ -89,6 +89,7 @@ async function permissionCheck(
     throw new NotAllowedError('Unauthorized');
   }
 }
+
 export async function createRouter(
   options: RouterOptions,
 ): Promise<express.Router> {
@@ -118,7 +119,9 @@ export async function createRouter(
   api.register(
     'ping',
     (_c: Context, _req: express.Request, res: express.Response) =>
-      ping(logger).then(result => res.json(result)),
+      ping(logger).then(result =>
+        res.status(result.statusCode).json(result.responseBody),
+      ),
   );
 
   api.register(
@@ -128,13 +131,13 @@ export async function createRouter(
         req.header('authorization'),
       );
       await permissionCheck(permissions, backstageToken);
-      const repos = await findAllRepositories(
+      const response = await findAllRepositories(
         logger,
         githubApiService,
         catalogInfoGenerator,
         true,
       );
-      return res.json(repos);
+      return res.status(response.statusCode).json(response.responseBody);
     },
   );
 

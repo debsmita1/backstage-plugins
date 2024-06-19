@@ -370,7 +370,7 @@ describe('GithubApiService tests', () => {
       data: [],
     });
 
-   const result = await githubApiService.getRepositoriesFromIntegrations();
+    const result = await githubApiService.getRepositoriesFromIntegrations();
 
     const expected_response = {
       repositories: [

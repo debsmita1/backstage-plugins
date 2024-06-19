@@ -60,10 +60,7 @@ const OPENAPI = `
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Repository"
-                  }
+                  "$ref": "#/components/schemas/RepositoryList"
                 },
                 "examples": {
                   "multipleRepos": {
@@ -170,6 +167,24 @@ const OPENAPI = `
   },
   "components": {
     "schemas": {
+      "RepositoryList": {
+        "title": "Repository List",
+        "type": "object",
+        "properties": {
+          "repositories": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Repository"
+            }
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "Repository": {
         "title": "Repository",
         "type": "object",
@@ -352,31 +367,34 @@ const OPENAPI = `
     "examples": {
       "multipleRepos": {
         "summary": "Multiple repositories",
-        "value": [
-          {
-            "id": "unique-id-1",
-            "name": "pet-app",
-            "url": "https://github.com/my-org/pet-app",
-            "organization": "my-org",
-            "importStatus": "WAIT_PR_APPROVAL",
-            "defaultBranch": "main"
-          },
-          {
-            "id": "unique-id-2",
-            "name": "project-zero",
-            "url": "https://ghe.example.com/my-other-org/project-zero",
-            "organization": "my-other-org",
-            "importStatus": "PR_REJECTED",
-            "defaultBranch": "dev"
-          },
-          {
-            "id": "unique-id-2",
-            "name": "project-one",
-            "defaultBranch": "trunk",
-            "url": "https://ghe.example.com/my-other-org-2/project-one",
-            "organization": "my-other-org-2"
-          }
-        ]
+        "value": {
+          "errors": [],
+          "repositories": [
+            {
+              "id": "unique-id-1",
+              "name": "pet-app",
+              "url": "https://github.com/my-org/pet-app",
+              "organization": "my-org",
+              "importStatus": "WAIT_PR_APPROVAL",
+              "defaultBranch": "main"
+            },
+            {
+              "id": "unique-id-2",
+              "name": "project-zero",
+              "url": "https://ghe.example.com/my-other-org/project-zero",
+              "organization": "my-other-org",
+              "importStatus": "PR_REJECTED",
+              "defaultBranch": "dev"
+            },
+            {
+              "id": "unique-id-2",
+              "name": "project-one",
+              "defaultBranch": "trunk",
+              "url": "https://ghe.example.com/my-other-org-2/project-one",
+              "organization": "my-other-org-2"
+            }
+          ]
+        }
       },
       "twoImports": {
         "summary": "Two import job requests",

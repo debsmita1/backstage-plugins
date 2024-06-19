@@ -44,6 +44,7 @@ metadata:
 spec:
   type: other
   lifecycle: unknown
+  owner: ${gitUrl.organization}
 ---`;
     if (!analyzeLocation) {
       return defaultCatalogInfo;
@@ -89,15 +90,13 @@ ${jsYaml.dump(generatedEntity.entity)}`,
   }
 
   async listCatalogUrlLocations(): Promise<string[]> {
-    const response = await fetch(
-      `${await this.discovery.getBaseUrl('catalog')}/locations`,
-      {
-        headers: {
-          Accept: 'application/json',
-        },
-        method: 'GET',
+    const url = `${await this.discovery.getBaseUrl('catalog')}/locations`;
+    const response = await fetch(url, {
+      headers: {
+        Accept: 'application/json',
       },
-    );
+      method: 'GET',
+    });
     const locations = (await response.json()) as {
       data: { id: string; target: string; type: string };
     }[];

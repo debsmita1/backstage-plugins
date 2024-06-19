@@ -5,7 +5,7 @@ import gitUrlParse from 'git-url-parse';
 import { Logger } from 'winston';
 
 import { CatalogInfoGenerator } from '../../helpers';
-import { Components, Paths } from '../../openapi';
+import { Components, Paths } from '../../openapi.d';
 import { GithubApiService } from '../githubApiService';
 import { findAllRepositories } from './repositories';
 

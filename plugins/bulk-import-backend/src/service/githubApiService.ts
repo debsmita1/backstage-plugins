@@ -26,7 +26,7 @@ import gitUrlParse from 'git-url-parse';
 import { Logger } from 'winston';
 
 import { CustomGithubCredentialsProvider } from '../helpers';
-// import { Components } from '../openapi';
+// import { Components } from '../openapi.d';
 import {
   ExtendedGithubCredentials,
   GithubAppCredentials,
@@ -350,7 +350,9 @@ export class GithubApiService {
       });
       // Response can either be a directory (array of files) or a single file element. In this case, we ensure it has the sha property to update it.
       if (Array.isArray(existingFile) || !('sha' in existingFile)) {
-        throw new Error(`The content at path ${fileName} is not a file or the response from GitHub does not contain the 'sha' property.`);
+        throw new Error(
+          `The content at path ${fileName} is not a file or the response from GitHub does not contain the 'sha' property.`,
+        );
       }
       // If the file already exists, update it
       await octo.rest.repos.createOrUpdateFileContents({

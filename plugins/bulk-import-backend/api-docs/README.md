@@ -27,6 +27,7 @@ All URIs are relative to *http://localhost*
  - [Import_github_pullRequest](./Models/Import_github_pullRequest.md)
  - [Import_repository](./Models/Import_repository.md)
  - [Repository](./Models/Repository.md)
+ - [RepositoryList](./Models/RepositoryList.md)
  - [ping_200_response](./Models/ping_200_response.md)
 
 

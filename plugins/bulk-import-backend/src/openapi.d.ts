@@ -128,6 +128,13 @@ declare namespace Components {
             defaultBranch?: string;
             errors?: string[];
         }
+        /**
+         * Repository List
+         */
+        export interface RepositoryList {
+            repositories?: /* Repository */ Repository[];
+            errors?: string[];
+        }
     }
 }
 declare namespace Paths {
@@ -146,7 +153,7 @@ declare namespace Paths {
     }
     namespace FindAllRepositories {
         namespace Responses {
-            export type $200 = /* Repository */ Components.Schemas.Repository[];
+            export type $200 = /* Repository List */ Components.Schemas.RepositoryList;
             export interface $500 {
             }
         }

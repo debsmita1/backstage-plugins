@@ -2,23 +2,51 @@ import gitUrlParse from 'git-url-parse';
 import { Logger } from 'winston';
 
 import { CatalogInfoGenerator } from '../../helpers';
-import { Components, Paths } from '../../openapi';
+import { Components } from '../../openapi.d';
 import { GithubApiService } from '../githubApiService';
 import { getImportStatusFromLocations } from './bulkImports';
+import { HandlerResponse } from './handlers';
 
 export async function findAllRepositories(
   logger: Logger,
   githubApiService: GithubApiService,
   catalogInfoGenerator: CatalogInfoGenerator,
   checkStatus: boolean,
-): Promise<Paths.FindAllRepositories.Responses.$200> {
+): Promise<HandlerResponse<Components.Schemas.RepositoryList>> {
   logger.debug('Getting all repositories..');
-  const promises = await githubApiService
+  const allReposAccessible =
+    await githubApiService.getRepositoriesFromIntegrations();
+  if (
+    allReposAccessible.repositories?.length === 0 &&
+    allReposAccessible.errors?.length > 0
+  ) {
+    // An error
+    const errorList: string[] = [];
+    for (const err of allReposAccessible.errors) {
+      if (err.error?.message) {
+        errorList.push(err.error.message);
+      }
+    }
+    return {
+      statusCode: 500,
+      responseBody: {
+        errors: errorList,
+      },
+    };
+  }
+  const resp = await githubApiService
     .getRepositoriesFromIntegrations()
     .then(async repos => {
       const catalogLocations =
         await catalogInfoGenerator.listCatalogUrlLocations();
-      return repos.repositories.map(async repo => {
+      const errorList: string[] = [];
+      for (const err of repos.errors) {
+        if (err.error?.message) {
+          errorList.push(err.error.message);
+        }
+      }
+      const repoList: Components.Schemas.Repository[] = [];
+      for (const repo of repos.repositories) {
         const gitUrl = gitUrlParse(repo.html_url);
         let importStatus: Components.Schemas.ImportStatus | undefined;
         const errors: string[] = [];
@@ -36,7 +64,7 @@ export async function findAllRepositories(
         } catch (error: any) {
           errors.push(error.message);
         }
-        return {
+        repoList.push({
           id: `${gitUrl.organization}/${repo.name}`,
           name: repo.name,
           organization: gitUrl.organization,
@@ -44,8 +72,15 @@ export async function findAllRepositories(
           defaultBranch: repo.default_branch,
           importStatus: importStatus,
           errors: errors,
-        } as Components.Schemas.Repository;
-      });
+        });
+      }
+      return {
+        errors: errorList,
+        repositories: repoList,
+      };
     });
-  return Promise.all(promises);
+  return {
+    statusCode: 200,
+    responseBody: resp,
+  };
 }
