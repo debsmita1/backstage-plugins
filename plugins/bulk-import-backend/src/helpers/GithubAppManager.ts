@@ -176,6 +176,14 @@ class GithubAppManager {
               headers: HEADERS,
             });
 
+          if (!result) {
+            return {
+              token: '',
+              expiresAt: DateTime.now().plus({ minutes: 1 }),
+              repositories: [],
+            };
+          }
+
           let repositoryNames;
 
           if (result.data.repository_selection === 'selected') {

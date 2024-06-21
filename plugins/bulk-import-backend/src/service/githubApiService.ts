@@ -142,7 +142,7 @@ export class GithubApiService {
       const repos = await octokit.paginate(
         octokit.rest.repos.listForAuthenticatedUser,
       );
-      repos.forEach(repo => {
+      repos?.forEach(repo => {
         /**
          * The listForAuthenticatedUser endpoint will grab all the repositories the github token has explicit access to.
          * These would include repositories they own, repositories where they are a collaborator,
@@ -185,10 +185,7 @@ export class GithubApiService {
       this.logger.debug(
         'No GitHub Integration in config => returning an empty list of repositories.',
       );
-      return {
-        repositories: [],
-        errors: [],
-      };
+      throw new Error("Looks like there is no GitHub Integration in config. Please add a configuration entry under 'integrations.github");
     }
 
     const credentialsByConfig = new Map<

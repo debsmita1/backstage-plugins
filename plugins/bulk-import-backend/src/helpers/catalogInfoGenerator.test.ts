@@ -3,7 +3,7 @@ import {
   PluginEndpointDiscovery,
 } from '@backstage/backend-common';
 
-// import fetch from 'node-fetch';
+import fetch from 'node-fetch';
 
 import { CatalogInfoGenerator } from './catalogInfoGenerator';
 
@@ -19,11 +19,11 @@ describe('catalogInfoGenerator', () => {
   let mockDiscovery: PluginEndpointDiscovery;
 
   beforeAll(() => {
-    // fetch.mockReturnValue(
-    //   Promise.resolve({
-    //     json: () => Promise.resolve({}),
-    //   }),
-    // );
+    (fetch as unknown as jest.Mock).mockReturnValue(
+      Promise.resolve({
+        json: () => Promise.resolve({}),
+      }),
+    );
     mockDiscovery = {
       getBaseUrl: (pluginId: string) =>
         Promise.resolve(`${mockBaseUrl}/my-${pluginId}`),
@@ -94,44 +94,44 @@ describe('catalogInfoGenerator', () => {
     );
   });
 
-  //   it('should return catalog-info yaml string if analyze-location endpoint returns some data', async () => {
-  //     fetch.mockReturnValue(
-  //       Promise.resolve({
-  //         json: () =>
-  //           Promise.resolve(
-  //             mockAnalyzeLocationResponse('my-org-4', [
-  //               'my-repo-comp-41',
-  //               'my-repo-comp-42',
-  //             ]),
-  //           ),
-  //       }),
-  //     );
-  //
-  //     const repoUrl = 'https://github.com/my-org-4/my-repo-4';
-  //     await expect(
-  //       catalogInfoGenerator.generateDefaultCatalogInfoContent(repoUrl),
-  //     ).resolves.toBe(`---
-  // ${getDefaultCatalogInfoWithoutSeparators('my-org-4', 'my-repo-comp-41')}
-  //
-  // ---
-  // ${getDefaultCatalogInfoWithoutSeparators('my-org-4', 'my-repo-comp-42')}
-  // `);
-  //     expect(fetch).toHaveBeenCalledWith(
-  //       `${mockBaseUrl}/my-catalog/analyze-location`,
-  //       {
-  //         headers: {
-  //           'Content-Type': 'application/json',
-  //         },
-  //         method: 'POST',
-  //         body: JSON.stringify({
-  //           location: {
-  //             type: 'github',
-  //             target: repoUrl,
-  //           },
-  //         }),
-  //       },
-  //     );
-  //   });
+    it('should return catalog-info yaml string if analyze-location endpoint returns some data', async () => {
+      (fetch as unknown as jest.Mock).mockReturnValue(
+        Promise.resolve({
+          json: () =>
+            Promise.resolve(
+              mockAnalyzeLocationResponse('my-org-4', [
+                'my-repo-comp-41',
+                'my-repo-comp-42',
+              ]),
+            ),
+        }),
+      );
+
+      const repoUrl = 'https://github.com/my-org-4/my-repo-4';
+      await expect(
+        catalogInfoGenerator.generateDefaultCatalogInfoContent(repoUrl),
+      ).resolves.toBe(`---
+${getDefaultCatalogInfoWithoutSeparators('my-org-4', 'my-repo-comp-41')}
+
+---
+${getDefaultCatalogInfoWithoutSeparators('my-org-4', 'my-repo-comp-42')}
+`);
+      expect(fetch).toHaveBeenCalledWith(
+        `${mockBaseUrl}/my-catalog/analyze-location`,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          method: 'POST',
+          body: JSON.stringify({
+            location: {
+              type: 'github',
+              target: repoUrl,
+            },
+          }),
+        },
+      );
+    });
 });
 
 function getDefaultCatalogInfo(org: string, name: string): string {
@@ -156,30 +156,31 @@ spec:
   owner: ${org}`;
 }
 
-// function mockAnalyzeLocationResponse(
-//   org: string,
-//   componentsToReturn: string[],
-// ) {
-//   const generatedEntities: any[] = [];
-//   for (let i = 0; i < componentsToReturn.length; i++) {
-//     generatedEntities.push({
-//       entity: {
-//         apiVersion: 'backstage.io/v1alpha1',
-//         kind: 'Component',
-//         metadata: {
-//           name: componentsToReturn[i],
-//           annotations: {
-//             'github.com/project-slug': `${org}/${componentsToReturn[i]}`,
-//           },
-//         },
-//         spec: {
-//           type: 'other',
-//           lifecycle: 'unknown',
-//         },
-//       },
-//     });
-//   }
-//   return {
-//     generateEntities: generatedEntities,
-//   };
-// }
+function mockAnalyzeLocationResponse(
+  org: string,
+  componentsToReturn: string[],
+) {
+  const generatedEntities: any[] = [];
+  for (const comp of componentsToReturn) {
+    generatedEntities.push({
+      entity: {
+        apiVersion: 'backstage.io/v1alpha1',
+        kind: 'Component',
+        metadata: {
+          name: comp,
+          annotations: {
+            'github.com/project-slug': `${org}/${comp}`,
+          },
+        },
+        spec: {
+          type: 'other',
+          lifecycle: 'unknown',
+          owner: org,
+        },
+      },
+    });
+  }
+  return {
+    generateEntities: generatedEntities,
+  };
+}

@@ -450,6 +450,27 @@ describe('createRouter', () => {
           },
         );
 
+      jest
+        .spyOn(GithubApiService.prototype, 'submitPrToRepo')
+        .mockImplementation((_logger, input) => {
+          switch (input.repoUrl) {
+            case 'https://github.com/my-org-ent-1/does-not-exist-in-catalog-but-errors-with-pr-creation':
+              return Promise.reject(
+                new Error('unable to create PR due to a server error'),
+              );
+            case 'https://github.com/my-org-ent-2/animated-happiness':
+            case 'https://github.com/my-org-ent-1/java-quarkus-starter':
+              return Promise.resolve({
+                prUrl: `${input.repoUrl}/pull/345678`,
+                prNumber: 345678,
+              });
+            default:
+              return Promise.reject(
+                new Error(`unknown repo url: ${input.repoUrl}`),
+              );
+          }
+        });
+
       const response = await request(app)
         .post('/imports')
         .send([
@@ -491,7 +512,39 @@ spec:
           },
         ]);
       expect(response.status).toEqual(202);
-      // TODO To be continued
+      expect(response.body).toEqual([
+        {
+          errors: ['unable to create PR due to a server error'],
+          repository: {
+            name: 'does-not-exist-in-catalog-but-errors-with-pr-creation',
+            organization: 'my-org-ent-1',
+            url: 'https://github.com/my-org-ent-1/does-not-exist-in-catalog-but-errors-with-pr-creation',
+          },
+          status: 'PR_ERROR',
+        },
+        {
+          github: {
+            pullRequest: {
+              number: 345678,
+              url: 'https://github.com/my-org-ent-2/animated-happiness/pull/345678',
+            },
+          },
+          repository: {
+            name: 'animated-happiness',
+            organization: 'my-org-ent-2',
+            url: 'https://github.com/my-org-ent-2/animated-happiness',
+          },
+          status: 'WAIT_PR_APPROVAL',
+        },
+        {
+          repository: {
+            name: 'java-quarkus-starter',
+            organization: 'my-org-ent-1',
+            url: 'https://github.com/my-org-ent-1/java-quarkus-starter',
+          },
+          status: 'ADDED',
+        },
+      ]);
     });
   });
 });
