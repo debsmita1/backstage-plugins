@@ -21,7 +21,7 @@ import { CustomGithubCredentialsProvider } from '../helpers';
 import { GithubApiService } from './githubApiService';
 
 const octokit = {
-  paginate: async (fn: any) =>  {
+  paginate: async (fn: any) => {
     const res = await fn();
     if (res) {
       return res.data;
@@ -383,8 +383,8 @@ describe('GithubApiService tests', () => {
       errors: [
         {
           error: {
-            message: "This is taking quite a while",
-            name: "504 Gateway Timeout",
+            message: 'This is taking quite a while',
+            name: '504 Gateway Timeout',
           },
           type: 'token',
         },
@@ -455,7 +455,10 @@ describe('GithubApiService tests', () => {
   });
 
   it('does not throw an error if no integration in config because there is one added automatically', async () => {
-    const repos = await new GithubApiService(logger, new ConfigReader({})).getRepositoriesFromIntegrations();
+    const repos = await new GithubApiService(
+      logger,
+      new ConfigReader({}),
+    ).getRepositoriesFromIntegrations();
     expect(repos).toEqual({
       errors: [],
       repositories: [],

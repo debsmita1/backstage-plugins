@@ -185,7 +185,9 @@ export class GithubApiService {
       this.logger.debug(
         'No GitHub Integration in config => returning an empty list of repositories.',
       );
-      throw new Error("Looks like there is no GitHub Integration in config. Please add a configuration entry under 'integrations.github");
+      throw new Error(
+        "Looks like there is no GitHub Integration in config. Please add a configuration entry under 'integrations.github",
+      );
     }
 
     const credentialsByConfig = new Map<

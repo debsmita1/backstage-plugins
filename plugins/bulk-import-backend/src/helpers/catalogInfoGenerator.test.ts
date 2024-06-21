@@ -94,44 +94,44 @@ describe('catalogInfoGenerator', () => {
     );
   });
 
-    it('should return catalog-info yaml string if analyze-location endpoint returns some data', async () => {
-      (fetch as unknown as jest.Mock).mockReturnValue(
-        Promise.resolve({
-          json: () =>
-            Promise.resolve(
-              mockAnalyzeLocationResponse('my-org-4', [
-                'my-repo-comp-41',
-                'my-repo-comp-42',
-              ]),
-            ),
-        }),
-      );
+  it('should return catalog-info yaml string if analyze-location endpoint returns some data', async () => {
+    (fetch as unknown as jest.Mock).mockReturnValue(
+      Promise.resolve({
+        json: () =>
+          Promise.resolve(
+            mockAnalyzeLocationResponse('my-org-4', [
+              'my-repo-comp-41',
+              'my-repo-comp-42',
+            ]),
+          ),
+      }),
+    );
 
-      const repoUrl = 'https://github.com/my-org-4/my-repo-4';
-      await expect(
-        catalogInfoGenerator.generateDefaultCatalogInfoContent(repoUrl),
-      ).resolves.toBe(`---
+    const repoUrl = 'https://github.com/my-org-4/my-repo-4';
+    await expect(
+      catalogInfoGenerator.generateDefaultCatalogInfoContent(repoUrl),
+    ).resolves.toBe(`---
 ${getDefaultCatalogInfoWithoutSeparators('my-org-4', 'my-repo-comp-41')}
 
 ---
 ${getDefaultCatalogInfoWithoutSeparators('my-org-4', 'my-repo-comp-42')}
 `);
-      expect(fetch).toHaveBeenCalledWith(
-        `${mockBaseUrl}/my-catalog/analyze-location`,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          method: 'POST',
-          body: JSON.stringify({
-            location: {
-              type: 'github',
-              target: repoUrl,
-            },
-          }),
+    expect(fetch).toHaveBeenCalledWith(
+      `${mockBaseUrl}/my-catalog/analyze-location`,
+      {
+        headers: {
+          'Content-Type': 'application/json',
         },
-      );
-    });
+        method: 'POST',
+        body: JSON.stringify({
+          location: {
+            type: 'github',
+            target: repoUrl,
+          },
+        }),
+      },
+    );
+  });
 });
 
 function getDefaultCatalogInfo(org: string, name: string): string {

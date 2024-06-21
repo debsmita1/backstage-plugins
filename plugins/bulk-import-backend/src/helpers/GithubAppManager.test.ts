@@ -914,9 +914,9 @@ describe('CustomGithubCredentialsProvider tests', () => {
         {
           type: 'app',
           headers: {
-            Authorization: "Bearer secret_token"
+            Authorization: 'Bearer secret_token',
           },
-          token: "secret_token",
+          token: 'secret_token',
           appId: 3,
         },
       ];
