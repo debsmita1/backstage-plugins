@@ -7,20 +7,20 @@ const OPENAPI = `
   "openapi": "3.1.0",
   "info": {
     "version": "1.0",
-    "title": "Bulk Import",
+    "title": "Bulk Import Backend",
     "description": "The Bulk Import Backend APIs allow users to bulk import Backstage entities into the backstage catalog from remote sources such as Git."
   },
   "paths": {
     "/ping": {
       "get": {
         "operationId": "ping",
-        "summary": "Check the health of the bulk-import backend router",
+        "summary": "Check the health of the Bulk Import backend router",
         "tags": [
           "Management"
         ],
         "responses": {
           "200": {
-            "description": "The backend router for the bulk-import backend is up and running",
+            "description": "The backend router for the Bulk Import backend is up and running",
             "content": {
               "application/json": {
                 "schema": {
@@ -71,7 +71,19 @@ const OPENAPI = `
             }
           },
           "500": {
-            "description": "Generic error"
+            "description": "Generic error when there are errors and no repository is returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RepositoryList"
+                },
+                "examples": {
+                  "repositoryListErrors": {
+                    "$ref": "#/components/examples/repositoryListErrors"
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -394,6 +406,15 @@ const OPENAPI = `
               "organization": "my-other-org-2"
             }
           ]
+        }
+      },
+      "repositoryListErrors": {
+        "summary": "Errors when listing repositories",
+        "value": {
+          "errors": [
+            "Github App with ID 2 failed spectacularly"
+          ],
+          "repositories": []
         }
       },
       "twoImports": {

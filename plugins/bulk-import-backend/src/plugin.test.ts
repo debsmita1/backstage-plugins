@@ -15,7 +15,7 @@ describe('bulkImportPlugin test', () => {
       ],
     });
 
-    const response = await request(server).get('/api/bulk-import/ping');
+    const response = await request(server).get('/api/bulk-import-backend/ping');
     expect(response.status).toBe(200);
     expect(response.body).toEqual({ status: 'ok' });
   });

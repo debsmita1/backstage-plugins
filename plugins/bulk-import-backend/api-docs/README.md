@@ -1,4 +1,4 @@
-# Documentation for Bulk Import
+# Documentation for Bulk Import Backend
 
 <a name="documentation-for-api-endpoints"></a>
 ## Documentation for API Endpoints
@@ -9,7 +9,7 @@ All URIs are relative to *http://localhost*
 |------------ | ------------- | ------------- | -------------|
 | *ImportApi* | [**createImportJobs**](Apis/ImportApi.md#createimportjobs) | **POST** /imports | Submit Import Jobs |
 *ImportApi* | [**findAllImports**](Apis/ImportApi.md#findallimports) | **GET** /imports | Fetch Import Jobs |
-| *ManagementApi* | [**ping**](Apis/ManagementApi.md#ping) | **GET** /ping | Check the health of the bulk-import backend router |
+| *ManagementApi* | [**ping**](Apis/ManagementApi.md#ping) | **GET** /ping | Check the health of the Bulk Import backend router |
 | *RepositoryApi* | [**findAllRepositories**](Apis/RepositoryApi.md#findallrepositories) | **GET** /repositories | Fetch Organization Repositories accessible by Backstage Github Integrations |
 
 

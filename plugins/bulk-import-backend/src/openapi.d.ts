@@ -154,8 +154,7 @@ declare namespace Paths {
     namespace FindAllRepositories {
         namespace Responses {
             export type $200 = /* Repository List */ Components.Schemas.RepositoryList;
-            export interface $500 {
-            }
+            export type $500 = /* Repository List */ Components.Schemas.RepositoryList;
         }
     }
     namespace Ping {
@@ -169,7 +168,7 @@ declare namespace Paths {
 
 export interface OperationMethods {
   /**
-   * ping - Check the health of the bulk-import backend router
+   * ping - Check the health of the Bulk Import backend router
    */
   'ping'(
     parameters?: Parameters<UnknownParamsObject> | null,
@@ -205,7 +204,7 @@ export interface OperationMethods {
 export interface PathsDictionary {
   ['/ping']: {
     /**
-     * ping - Check the health of the bulk-import backend router
+     * ping - Check the health of the Bulk Import backend router
      */
     'get'(
       parameters?: Parameters<UnknownParamsObject> | null,
