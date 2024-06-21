@@ -4,8 +4,8 @@ import { Logger } from 'winston';
 import { CatalogInfoGenerator } from '../../helpers';
 import { Components } from '../../openapi.d';
 import { GithubApiService } from '../githubApiService';
-import { getImportStatusFromLocations } from './bulkImports';
 import { HandlerResponse } from './handlers';
+import { getImportStatusFromLocations } from './importStatus';
 
 export async function findAllRepositories(
   logger: Logger,
