@@ -43,12 +43,14 @@ import { Logger } from 'winston';
 // import crypto from 'crypto';
 
 import { CatalogInfoGenerator } from '../helpers/catalogInfoGenerator';
-import { Paths } from '../openapi.d';
+import { Components, Paths } from '../openapi.d';
 import { openApiDocument } from '../openapidocument';
 import { GithubApiService } from './githubApiService';
 import { createImportJobs, findAllImports } from './handlers/bulkImports';
 import { ping } from './handlers/ping';
 import { findAllRepositories } from './handlers/repositories';
+
+import RepositoryList = Components.Schemas.RepositoryList;
 
 // TODO: Remove this when done to use the @janus-idp/backstage-plugin-bulk-import-common import instead
 /** This permission is used to access the bulk-import endpoints
@@ -126,18 +128,35 @@ export async function createRouter(
 
   api.register(
     'findAllRepositories',
-    async (_c: Context, req: express.Request, res: express.Response) => {
+    async (c: Context, req: express.Request, res: express.Response) => {
       const backstageToken = getBearerTokenFromAuthorizationHeader(
         req.header('authorization'),
       );
       await permissionCheck(permissions, backstageToken);
+      const q: Paths.FindAllRepositories.QueryParameters = Object.assign(
+        {},
+        c.request.query,
+      );
+      // we need to convert strings to real types due to open PR https://github.com/openapistack/openapi-backend/pull/571
+      q.pagePerIntegration = stringToNumber(q.pagePerIntegration);
+      q.sizePerIntegration = stringToNumber(q.sizePerIntegration);
       const response = await findAllRepositories(
         logger,
         githubApiService,
         catalogInfoGenerator,
         true,
+        q.pagePerIntegration,
+        q.sizePerIntegration,
       );
-      return res.status(response.statusCode).json(response.responseBody);
+      // const paginated = paginate(response.responseBody?.repositories, q.page, q.size)
+      const repos = response.responseBody?.repositories;
+      return res.status(response.statusCode).json({
+        errors: response.responseBody?.errors,
+        repositories: repos,
+        // totalCount: response.responseBody?.totalCount,
+        page: q.sizePerIntegration,
+        size: q.sizePerIntegration,
+      } as RepositoryList);
     },
   );
 
@@ -299,4 +318,8 @@ export async function createRouter(
   router.use(errorHandler());
 
   return router;
+}
+
+function stringToNumber(s: number | undefined): number | undefined {
+  return s ? Number.parseInt(s.toString(), 10) : undefined;
 }

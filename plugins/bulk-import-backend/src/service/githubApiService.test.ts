@@ -154,6 +154,7 @@ describe('GithubApiService tests', () => {
     const expected_response = {
       repositories: [],
       errors: [],
+      totalCount: 0,
     };
     expect(result).toEqual(expected_response);
   });
@@ -236,6 +237,7 @@ describe('GithubApiService tests', () => {
           appId: 2,
         },
       ],
+      totalCount: 0,
     };
     expect(result).toEqual(expected_response);
     expect(errorLog).toHaveBeenCalledTimes(1);
@@ -316,6 +318,7 @@ describe('GithubApiService tests', () => {
         },
       ],
       errors: [],
+      totalCount: 0,
     };
     expect(errorLog).not.toHaveBeenCalled();
     expect(result).toEqual(expected_response);
@@ -397,6 +400,7 @@ describe('GithubApiService tests', () => {
           appId: 1,
         },
       ],
+      totalCount: 0,
     };
     expect(result).toEqual(expected_response);
   });
@@ -449,6 +453,7 @@ describe('GithubApiService tests', () => {
         },
       ],
       errors: [],
+      totalCount: 0,
     };
     expect(errorLog).not.toHaveBeenCalled();
     expect(result).toEqual(expected_response);
@@ -462,6 +467,7 @@ describe('GithubApiService tests', () => {
     expect(repos).toEqual({
       errors: [],
       repositories: [],
+      totalCount: 0,
     });
   });
 });

@@ -21,7 +21,7 @@ import {
   ScmIntegrations,
 } from '@backstage/integration';
 
-import { Octokit, RestEndpointMethodTypes } from '@octokit/rest';
+import { Octokit } from '@octokit/rest';
 import gitUrlParse from 'git-url-parse';
 import { Logger } from 'winston';
 
@@ -35,6 +35,7 @@ import {
   GithubRepositoryResponse,
   isGithubAppCredential,
 } from '../types';
+import { DefaultPageNumber, DefaultPageSize } from './handlers/handlers';
 
 export class GithubApiService {
   private readonly logger: Logger;
@@ -96,15 +97,17 @@ export class GithubApiService {
     credential: GithubAppCredentials,
     repositories: Map<string, GithubRepository>,
     errors: Map<number, GithubRepoFetchError>,
-  ): Promise<void> {
+    pageNumber: number = DefaultPageNumber,
+    pageSize: number = DefaultPageSize,
+  ): Promise<number> {
+    let totalCount = 0;
     try {
-      const repos = await octokit.paginate(
-        octokit.apps.listReposAccessibleToInstallation,
-      );
-      // The return type of the paginate method is incorrect for apps.listReposAccessibleToInstallation
-      const accessibleRepos: RestEndpointMethodTypes['apps']['listReposAccessibleToInstallation']['response']['data']['repositories'] =
-        repos.repositories ?? repos;
-      accessibleRepos.forEach(repo => {
+      const resp = await octokit.apps.listReposAccessibleToInstallation({
+        page: pageNumber,
+        per_page: pageSize,
+      });
+      const repos = resp?.data?.repositories ?? resp?.data;
+      repos?.forEach(repo => {
         const githubRepo: GithubRepository = {
           name: repo.name,
           full_name: repo.full_name,
@@ -114,6 +117,7 @@ export class GithubApiService {
         };
         repositories.set(githubRepo.full_name, githubRepo);
       });
+      totalCount = resp?.data?.total_count || 0;
     } catch (err) {
       this.logger.error(
         `Fetching repositories with access token for github app ${credential.appId}, failed with ${err}`,
@@ -126,6 +130,7 @@ export class GithubApiService {
         errors.set(credential.appId, credentialError);
       }
     }
+    return Promise.resolve(totalCount);
   }
 
   /**
@@ -137,12 +142,24 @@ export class GithubApiService {
     credential: GithubCredentials,
     repositories: Map<string, GithubRepository>,
     errors: Map<number, GithubRepoFetchError>,
+    pageNumber: number = DefaultPageNumber,
+    pageSize: number = DefaultPageSize,
   ): Promise<void> {
     try {
-      const repos = await octokit.paginate(
-        octokit.rest.repos.listForAuthenticatedUser,
-      );
-      repos?.forEach(repo => {
+      const resp = await octokit.rest.repos.listForAuthenticatedUser({
+        page: pageNumber,
+        per_page: pageSize,
+        sort: 'full_name',
+        direction: 'asc',
+      });
+      // const repos = await octokit.paginate(
+      //   octokit.rest.repos.listForAuthenticatedUser,
+      //   {
+      //     page: pageNumber,
+      //     per_page: pageSize,
+      //   },
+      // );
+      resp?.data?.forEach(repo => {
         /**
          * The listForAuthenticatedUser endpoint will grab all the repositories the github token has explicit access to.
          * These would include repositories they own, repositories where they are a collaborator,
@@ -177,7 +194,10 @@ export class GithubApiService {
    *   - a list of unique repositories the github integrations have access to
    *   - a list of errors encountered by each app and/or token (if any exist)
    */
-  async getRepositoriesFromIntegrations(): Promise<GithubRepositoryResponse> {
+  async getRepositoriesFromIntegrations(
+    pageNumber: number = DefaultPageNumber,
+    pageSize: number = DefaultPageSize,
+  ): Promise<GithubRepositoryResponse> {
     const ghConfigs = this.integrations.github
       .list()
       .map(ghInt => ghInt.config);
@@ -202,6 +222,7 @@ export class GithubApiService {
     }
     const repositories = new Map<string, GithubRepository>();
     const errors = new Map<number, GithubRepoFetchError>();
+    let totalCount = 0;
     for (const [ghConfig, credentials] of credentialsByConfig) {
       for (const credential of credentials) {
         if ('error' in credential) {
@@ -226,11 +247,13 @@ export class GithubApiService {
         });
 
         if (isGithubAppCredential(credential)) {
-          await this.addGithubAppRepositories(
+          totalCount += await this.addGithubAppRepositories(
             octokit,
             credential,
             repositories,
             errors,
+            pageNumber,
+            pageSize,
           );
         } else {
           await this.addGithubTokenRepositories(
@@ -238,6 +261,8 @@ export class GithubApiService {
             credential,
             repositories,
             errors,
+            pageNumber,
+            pageSize,
           );
         }
       }
@@ -245,6 +270,7 @@ export class GithubApiService {
     return {
       repositories: Array.from(repositories.values()),
       errors: Array.from(errors.values()),
+      totalCount: totalCount,
     };
   }
 

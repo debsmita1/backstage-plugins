@@ -54,6 +54,26 @@ const OPENAPI = `
         "tags": [
           "Repository"
         ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "pagePerIntegration",
+            "description": "the page number for each Integration",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "sizePerIntegration",
+            "description": "the number of items per Integration to return per page",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Repository list was fetched successfully with no errors",
@@ -194,6 +214,12 @@ const OPENAPI = `
             "items": {
               "type": "string"
             }
+          },
+          "page": {
+            "type": "integer"
+          },
+          "size": {
+            "type": "integer"
           }
         }
       },

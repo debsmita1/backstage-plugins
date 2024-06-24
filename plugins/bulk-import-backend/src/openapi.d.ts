@@ -134,6 +134,8 @@ declare namespace Components {
         export interface RepositoryList {
             repositories?: /* Repository */ Repository[];
             errors?: string[];
+            page?: number;
+            size?: number;
         }
     }
 }
@@ -152,6 +154,14 @@ declare namespace Paths {
         }
     }
     namespace FindAllRepositories {
+        namespace Parameters {
+            export type PagePerIntegration = number;
+            export type SizePerIntegration = number;
+        }
+        export interface QueryParameters {
+            pagePerIntegration?: Parameters.PagePerIntegration;
+            sizePerIntegration?: Parameters.SizePerIntegration;
+        }
         namespace Responses {
             export type $200 = /* Repository List */ Components.Schemas.RepositoryList;
             export type $500 = /* Repository List */ Components.Schemas.RepositoryList;
@@ -179,7 +189,7 @@ export interface OperationMethods {
    * findAllRepositories - Fetch Organization Repositories accessible by Backstage Github Integrations
    */
   'findAllRepositories'(
-    parameters?: Parameters<UnknownParamsObject> | null,
+    parameters?: Parameters<Paths.FindAllRepositories.QueryParameters> | null,
     data?: any,
     config?: AxiosRequestConfig  
   ): OperationResponse<Paths.FindAllRepositories.Responses.$200>
@@ -217,7 +227,7 @@ export interface PathsDictionary {
      * findAllRepositories - Fetch Organization Repositories accessible by Backstage Github Integrations
      */
     'get'(
-      parameters?: Parameters<UnknownParamsObject> | null,
+      parameters?: Parameters<Paths.FindAllRepositories.QueryParameters> | null,
       data?: any,
       config?: AxiosRequestConfig  
     ): OperationResponse<Paths.FindAllRepositories.Responses.$200>
