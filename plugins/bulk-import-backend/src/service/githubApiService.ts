@@ -21,7 +21,7 @@ import {
   ScmIntegrations,
 } from '@backstage/integration';
 
-import { Octokit, RestEndpointMethodTypes } from '@octokit/rest';
+import { Octokit } from '@octokit/rest';
 import gitUrlParse from 'git-url-parse';
 import { Logger } from 'winston';
 
@@ -102,23 +102,12 @@ export class GithubApiService {
   ): Promise<number> {
     let totalCount = 0;
     try {
-      let accessibleRepos: RestEndpointMethodTypes['apps']['listReposAccessibleToInstallation']['response']['data']['repositories'];
-      if (pageNumber === 0 && pageSize === 0) {
-        // Retrieve everything
-        const repos = await octokit.paginate(
-          octokit.apps.listReposAccessibleToInstallation,
-        );
-        accessibleRepos = repos.repositories ?? repos;
-        totalCount = repos.total_count;
-      } else {
-        const resp = await octokit.apps.listReposAccessibleToInstallation({
-          page: pageNumber,
-          per_page: pageSize,
-        });
-        accessibleRepos = resp?.data?.repositories ?? resp?.data;
-        totalCount = resp?.data?.total_count || 0;
-      }
-      accessibleRepos?.forEach(repo => {
+      const resp = await octokit.apps.listReposAccessibleToInstallation({
+        page: pageNumber,
+        per_page: pageSize,
+      });
+      const repos = resp?.data?.repositories ?? resp?.data;
+      repos?.forEach(repo => {
         const githubRepo: GithubRepository = {
           name: repo.name,
           full_name: repo.full_name,
@@ -128,6 +117,7 @@ export class GithubApiService {
         };
         repositories.set(githubRepo.full_name, githubRepo);
       });
+      totalCount = resp?.data?.total_count || 0;
     } catch (err) {
       this.logger.error(
         `Fetching repositories with access token for github app ${credential.appId}, failed with ${err}`,
@@ -156,26 +146,20 @@ export class GithubApiService {
     pageSize: number = DefaultPageSize,
   ): Promise<void> {
     try {
-      let repos;
-      if (pageNumber === 0 && pageSize === 0) {
-        // Get everything
-        repos = await octokit.paginate(
-          octokit.rest.repos.listForAuthenticatedUser,
-          {
-            sort: 'full_name',
-            direction: 'asc',
-          },
-        );
-      } else {
-        const resp = await octokit.rest.repos.listForAuthenticatedUser({
-          page: pageNumber,
-          per_page: pageSize,
-          sort: 'full_name',
-          direction: 'asc',
-        });
-        repos = resp?.data;
-      }
-      repos?.forEach(repo => {
+      const resp = await octokit.rest.repos.listForAuthenticatedUser({
+        page: pageNumber,
+        per_page: pageSize,
+        sort: 'full_name',
+        direction: 'asc',
+      });
+      // const repos = await octokit.paginate(
+      //   octokit.rest.repos.listForAuthenticatedUser,
+      //   {
+      //     page: pageNumber,
+      //     per_page: pageSize,
+      //   },
+      // );
+      resp?.data?.forEach(repo => {
         /**
          * The listForAuthenticatedUser endpoint will grab all the repositories the github token has explicit access to.
          * These would include repositories they own, repositories where they are a collaborator,
