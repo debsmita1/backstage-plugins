@@ -7,7 +7,11 @@ import { Logger } from 'winston';
 import { CatalogInfoGenerator } from '../../helpers';
 import { Components, Paths } from '../../openapi.d';
 import { GithubApiService } from '../githubApiService';
-import { HandlerResponse } from './handlers';
+import {
+  DefaultPageNumber,
+  DefaultPageSize,
+  HandlerResponse,
+} from './handlers';
 import { verifyLocationExistence } from './importStatus';
 import { findAllRepositories } from './repositories';
 
@@ -15,6 +19,8 @@ export async function findAllImports(
   logger: Logger,
   githubApiService: GithubApiService,
   catalogInfoGenerator: CatalogInfoGenerator,
+  pageNumber: number = DefaultPageNumber,
+  pageSize: number = DefaultPageSize,
 ): Promise<HandlerResponse<Components.Schemas.Import[]>> {
   logger.debug('Getting all bulk import jobs..');
   const result: Components.Schemas.Import[] = [];
@@ -24,6 +30,8 @@ export async function findAllImports(
     githubApiService,
     catalogInfoGenerator,
     false,
+    pageNumber,
+    pageSize,
   );
   for (const repo of repos.responseBody?.repositories ?? []) {
     if (!repo.url) {

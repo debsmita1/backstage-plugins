@@ -120,6 +120,26 @@ const OPENAPI = `
         "tags": [
           "Import"
         ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "pagePerIntegration",
+            "description": "the page number for each Integration",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "sizePerIntegration",
+            "description": "the number of items per Integration to return per page",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Import Jobs list was fetched successfully with no errors",

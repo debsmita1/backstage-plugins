@@ -147,6 +147,14 @@ declare namespace Paths {
         }
     }
     namespace FindAllImports {
+        namespace Parameters {
+            export type PagePerIntegration = number;
+            export type SizePerIntegration = number;
+        }
+        export interface QueryParameters {
+            pagePerIntegration?: Parameters.PagePerIntegration;
+            sizePerIntegration?: Parameters.SizePerIntegration;
+        }
         namespace Responses {
             export type $200 = /* Import Job */ Components.Schemas.Import[];
             export interface $500 {
@@ -197,7 +205,7 @@ export interface OperationMethods {
    * findAllImports - Fetch Import Jobs
    */
   'findAllImports'(
-    parameters?: Parameters<UnknownParamsObject> | null,
+    parameters?: Parameters<Paths.FindAllImports.QueryParameters> | null,
     data?: any,
     config?: AxiosRequestConfig  
   ): OperationResponse<Paths.FindAllImports.Responses.$200>
@@ -237,7 +245,7 @@ export interface PathsDictionary {
      * findAllImports - Fetch Import Jobs
      */
     'get'(
-      parameters?: Parameters<UnknownParamsObject> | null,
+      parameters?: Parameters<Paths.FindAllImports.QueryParameters> | null,
       data?: any,
       config?: AxiosRequestConfig  
     ): OperationResponse<Paths.FindAllImports.Responses.$200>

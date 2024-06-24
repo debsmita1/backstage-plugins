@@ -35,12 +35,16 @@ Submit Import Jobs
 
 <a name="findAllImports"></a>
 # **findAllImports**
-> List findAllImports()
+> List findAllImports(pagePerIntegration, sizePerIntegration)
 
 Fetch Import Jobs
 
 ### Parameters
-This endpoint does not need any parameter.
+
+|Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **pagePerIntegration** | **Integer**| the page number for each Integration | [optional] [default to 1] |
+| **sizePerIntegration** | **Integer**| the number of items per Integration to return per page | [optional] [default to 20] |
 
 ### Return type
 

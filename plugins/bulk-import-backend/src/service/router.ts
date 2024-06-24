@@ -162,15 +162,24 @@ export async function createRouter(
 
   api.register(
     'findAllImports',
-    async (_c: Context, req: express.Request, res: express.Response) => {
+    async (c: Context, req: express.Request, res: express.Response) => {
       const backstageToken = getBearerTokenFromAuthorizationHeader(
         req.header('authorization'),
       );
       await permissionCheck(permissions, backstageToken);
+      const q: Paths.FindAllRepositories.QueryParameters = Object.assign(
+        {},
+        c.request.query,
+      );
+      // we need to convert strings to real types due to open PR https://github.com/openapistack/openapi-backend/pull/571
+      q.pagePerIntegration = stringToNumber(q.pagePerIntegration);
+      q.sizePerIntegration = stringToNumber(q.sizePerIntegration);
       const response = await findAllImports(
         logger,
         githubApiService,
         catalogInfoGenerator,
+        q.pagePerIntegration,
+        q.sizePerIntegration,
       );
       return res.status(response.statusCode).json(response.responseBody);
     },
