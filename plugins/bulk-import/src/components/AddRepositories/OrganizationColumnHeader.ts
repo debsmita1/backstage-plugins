@@ -15,6 +15,6 @@ export const OrganizationColumnHeader: TableColumn[] = [
   {
     id: 'catalogInfoYaml',
     title: 'catalog-info.yaml',
-    field: 'catalogInfoYaml',
+    field: 'catalogInfoYaml.status',
   },
 ];

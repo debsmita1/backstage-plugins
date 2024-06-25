@@ -186,9 +186,7 @@ test.describe('Bulk import plugin', () => {
   });
 
   test('Cancel button closes side panel', async () => {
-    await page
-      .locator('button[aria-labelledby="cancel-drawer-select"]')
-      .click();
+    await page.locator('button[aria-labelledby="close-drawer"]').click();
 
     await expect(
       page.getByRole('heading', { name: 'org/pet-store-boston' }),

@@ -6,11 +6,7 @@ import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import { useFormikContext } from 'formik';
 
-import {
-  AddRepositoriesData,
-  AddRepositoriesFormValues,
-  RepositorySelection,
-} from '../../types';
+import { AddRepositoriesFormValues, RepositorySelection } from '../../types';
 import { RepositoriesSearchBar } from './AddRepositoriesSearchBar';
 
 export const AddRepositoriesTableToolbar = ({
@@ -23,8 +19,8 @@ export const AddRepositoriesTableToolbar = ({
   title: string;
   setSearchString: (str: string) => void;
   onPageChange?: (page: number) => void;
-  activeOrganization?: AddRepositoriesData;
-  selectedReposFromDrawer?: number[];
+  activeOrganization?: string;
+  selectedReposFromDrawer?: { repoId: string; orgName: string }[];
 }) => {
   const { setFieldValue, values } =
     useFormikContext<AddRepositoriesFormValues>();
@@ -51,13 +47,15 @@ export const AddRepositoriesTableToolbar = ({
 
   React.useEffect(() => {
     if (activeOrganization && selectedReposFromDrawer) {
-      const thisSelectedReposCount = activeOrganization.repositories?.filter(
-        repo => selectedReposFromDrawer.includes(repo.id) && repo.id > -1,
+      const thisSelectedReposCount = selectedReposFromDrawer?.filter(
+        repo => repo.orgName === activeOrganization,
       ).length;
       setSelectedReposNumber(thisSelectedReposCount || 0);
     } else {
       setSelectedReposNumber(
-        values.repositories ? Object.keys(values.repositories).length : 0,
+        values.repositories
+          ? Object.values(values.repositories).filter(r => r.repoName).length
+          : 0,
       );
     }
   }, [selectedReposFromDrawer, values, activeOrganization]);

@@ -14,7 +14,7 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 
-import { AddRepositoriesData } from '../../types';
+import { AddRepositoriesData, SelectedRepository } from '../../types';
 import { urlHelper } from '../../utils/repository-utils';
 import { AddRepositoriesTableToolbar } from './AddRepositoriesTableToolbar';
 import { RepositoriesTable } from './RepositoriesTable';
@@ -22,10 +22,10 @@ import { RepositoriesTable } from './RepositoriesTable';
 type AddRepositoriesDrawerProps = {
   open: boolean;
   onClose: () => void;
-  onSelect: (ids: number[], drawerOrgId: number) => void;
+  onSelect: (ids: SelectedRepository[], drawerOrgId: string) => void;
   title: string;
   data: AddRepositoriesData;
-  checkedRepos: number[];
+  checkedRepos: SelectedRepository[];
 };
 
 const useStyles = makeStyles(theme => ({
@@ -67,13 +67,13 @@ export const AddRepositoriesDrawer = ({
   const [searchString, setSearchString] = useState<string>('');
 
   const [selectedReposID, setSelectedReposID] =
-    useState<number[]>(checkedRepos);
+    useState<{ repoId: string; orgName: string }[]>(checkedRepos);
 
-  const updateSelectedReposInDrawer = (ids: number[]) => {
+  const updateSelectedReposInDrawer = (ids: SelectedRepository[]) => {
     setSelectedReposID(ids);
   };
 
-  const handleSelectRepoFromDrawer = (selected: number[]) => {
+  const handleSelectRepoFromDrawer = (selected: SelectedRepository[]) => {
     onSelect(selected, data?.id);
     onClose();
   };
@@ -107,12 +107,12 @@ export const AddRepositoriesDrawer = ({
             title={title}
             setSearchString={setSearchString}
             selectedReposFromDrawer={selectedReposID}
-            activeOrganization={data}
+            activeOrganization={data.orgName}
           />
           <RepositoriesTable
             searchString={searchString}
             updateSelectedReposInDrawer={updateSelectedReposInDrawer}
-            drawerOrganization={data}
+            drawerOrganization={data.orgName}
           />
         </Card>
         <div className={classes.sidePanelfooter}>
@@ -129,7 +129,7 @@ export const AddRepositoriesDrawer = ({
           </span>
           <span>
             <Button
-              aria-labelledby="cancel-drawer-select"
+              aria-labelledby="close-drawer"
               variant="outlined"
               onClick={onClose}
             >

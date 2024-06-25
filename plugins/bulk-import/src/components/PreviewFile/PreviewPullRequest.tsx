@@ -158,6 +158,40 @@ export const PreviewPullRequest = ({
         setFormErrors(err);
       }
     }
+
+    if (event.target.name === 'entityOwner') {
+      let prObj = {
+        ...pullRequest,
+        [repoName]: {
+          ...pullRequest[repoName],
+          entityOwner: event.target.value || '',
+          yaml: {
+            ...pullRequest[repoName]?.yaml,
+            spec: {
+              ...pullRequest[repoName]?.yaml.spec,
+            },
+          },
+        },
+      };
+      if (!event.target.value) {
+        delete prObj[repoName].yaml.spec?.owner;
+      } else {
+        prObj = {
+          ...prObj,
+          [repoName]: {
+            ...prObj[repoName],
+            yaml: {
+              ...prObj[repoName]?.yaml,
+              spec: {
+                ...prObj[repoName]?.yaml.spec,
+                owner: event.target.value,
+              },
+            },
+          },
+        };
+      }
+      setPullRequest(prObj);
+    }
   };
 
   return (
@@ -217,26 +251,17 @@ export const PreviewPullRequest = ({
         value={entityOwner || ''}
         loading={entitiesLoading}
         loadingText="Loading groups and users"
-        disableClearable
         onChange={(_event: React.ChangeEvent<{}>, value: string | null) => {
           setEntityOwner(value);
-          setPullRequest({
-            ...pullRequest,
-            [repoName]: {
-              ...pullRequest[repoName],
-              entityOwner: value || '',
-            },
-          });
+          handleChange({
+            target: { name: 'entityOwner', value: value as string },
+          } as any);
         }}
         onInputChange={(_e, newSearch: string) => {
           setEntityOwner(newSearch || '');
-          setPullRequest({
-            ...pullRequest,
-            [repoName]: {
-              ...pullRequest[repoName],
-              entityOwner: newSearch || '',
-            },
-          });
+          handleChange({
+            target: { name: 'entityOwner', value: newSearch as string },
+          } as any);
           if (!newSearch) {
             setFormErrors({
               ...formErrors,

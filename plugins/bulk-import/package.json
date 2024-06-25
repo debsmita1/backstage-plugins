@@ -43,7 +43,8 @@
     "@janus-idp/shared-react": "2.6.4",
     "formik": "^2.4.5",
     "lodash": "^4.17.21",
-    "react-use": "^17.2.4"
+    "react-use": "^17.2.4",
+    "yaml": "^2.0.0"
   },
   "peerDependencies": {
     "react": "16.13.1 || ^17.0.0 || ^18.0.0",

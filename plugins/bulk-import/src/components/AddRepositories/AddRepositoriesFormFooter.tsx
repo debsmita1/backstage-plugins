@@ -40,7 +40,7 @@ const useStyles = makeStyles(theme => ({
 
 export const AddRepositoriesFormFooter = () => {
   const styles = useStyles();
-  const { values, handleSubmit } =
+  const { values, handleSubmit, isSubmitting } =
     useFormikContext<AddRepositoriesFormValues>();
   const submitTitle =
     (values.approvalTool === ApprovalTool.Git
@@ -51,25 +51,32 @@ export const AddRepositoriesFormFooter = () => {
       ? 's'
       : '');
 
+  const disableCreate =
+    !values.repositories ||
+    Object.values(values.repositories).filter(r => r.repoName).length === 0 ||
+    isSubmitting;
+
+  const toolTipTitle = () => {
+    if (disableCreate && isSubmitting) {
+      return 'Creating import jobs';
+    }
+    if (disableCreate) {
+      return 'Please wait until the catalog-info.yaml files are generated';
+    }
+    return '';
+  };
+
   return (
     <div className={styles.footer}>
-      <Tooltip
-        classes={{ tooltip: styles.tooltip }}
-        title="Please wait until the catalog-info.yaml files are generated"
-      >
-        <span>
-          <Button
-            variant="contained"
-            onClick={handleSubmit as any}
-            className={styles.createButton}
-            disabled={
-              !values.repositories ||
-              Object.keys(values.repositories).length === 0
-            }
-          >
-            {submitTitle}
-          </Button>
-        </span>
+      <Tooltip classes={{ tooltip: styles.tooltip }} title={toolTipTitle()}>
+        <Button
+          variant="contained"
+          onClick={handleSubmit as any}
+          className={styles.createButton}
+          disabled={disableCreate}
+        >
+          {submitTitle}
+        </Button>
       </Tooltip>
       <Link to="/bulk-import/repositories">
         <Button variant="outlined">Cancel</Button>

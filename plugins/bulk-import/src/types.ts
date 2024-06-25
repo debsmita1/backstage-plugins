@@ -19,8 +19,11 @@ export type PullRequestPreview = {
 };
 export type PullRequestPreviewData = { [name: string]: PullRequestPreview };
 
+export type ImportStatus = 'ADDED' | 'WAIT_PR_APPROVAL' | 'PR_ERROR' | null;
+
 export type AddRepositoriesData = {
-  id: number;
+  id: string;
+  defaultBranch: string;
   repoName?: string;
   orgName?: string;
   repoUrl?: string;
@@ -28,8 +31,10 @@ export type AddRepositoriesData = {
   repositories?: AddRepositoriesData[];
   selectedRepositories?: AddRepositoriesData[];
   catalogInfoYaml?: {
-    status: string;
+    status: ImportStatus;
     prTemplate: PullRequestPreview;
+    pullRequest?: string;
+    lastUpdated?: string;
   };
   lastUpdated?: string;
 };
@@ -46,11 +51,17 @@ export type AddRepositoriesFormValues = {
   approvalTool: 'git' | 'servicenow';
 };
 
+export type SelectedRepository = {
+  repoId: string;
+  orgName: string;
+};
+
 export enum RepositoryStatus {
-  Exists = 'Exists',
+  ADDED = 'ADDED',
+  'WAIT_PR_APPROVAL' = 'WAIT_PR_APPROVAL',
   Ready = 'Ready',
-  NotGenerated = 'Not generated',
-  Failed = 'Failed',
+  NotGenerated = 'NotGenerated',
+  'PR_ERROR' = 'PR_ERROR',
 }
 
 export enum RepositorySelection {

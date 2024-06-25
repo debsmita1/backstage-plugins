@@ -17,7 +17,7 @@ type EditCatalogInfoProps = {
 };
 
 const EditCatalogInfo = ({ data }: EditCatalogInfoProps) => {
-  const hasPermission = true;
+  const hasPermission = false;
   const [drawerOpen, setDrawerOpen] = useState(false);
   const { setFieldValue } = useFormikContext<AddRepositoriesFormValues>();
   const [formErrors, setFormErrors] = React.useState<PullRequestPreviewData>();
@@ -45,7 +45,11 @@ const EditCatalogInfo = ({ data }: EditCatalogInfoProps) => {
             : 'View catalog-info.yaml file'
         }
       >
-        <span data-testid="edit-catalog-info">
+        <span
+          data-testid={
+            hasPermission ? 'edit-catalog-info' : 'view-catalog-info'
+          }
+        >
           {hasPermission ? (
             <IconButton
               color="inherit"
@@ -57,7 +61,7 @@ const EditCatalogInfo = ({ data }: EditCatalogInfoProps) => {
           ) : (
             <IconButton
               target="_blank"
-              href={data.repoUrl || ''}
+              href={data.catalogInfoYaml?.pullRequest || ''}
               color="inherit"
               aria-label="Update"
             >

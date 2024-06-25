@@ -3,7 +3,7 @@ import React from 'react';
 import { Link, TableColumn } from '@backstage/core-components';
 
 import { AddRepositoriesData } from '../../types';
-import { urlHelper } from '../../utils/repository-utils';
+import { getImportStatus, urlHelper } from '../../utils/repository-utils';
 import DeleteRepository from './DeleteRepository';
 import EditCatalogInfo from './EditCatalogInfo';
 import SyncRepository from './SyncRepository';
@@ -41,10 +41,12 @@ export const columns: TableColumn<AddRepositoriesData>[] = [
     field: 'catalogInfoYaml.status',
     type: 'string',
     align: 'left',
+    render: (data: AddRepositoriesData) =>
+      getImportStatus(data.catalogInfoYaml?.status as string),
   },
   {
     title: 'Last updated',
-    field: 'lastUpdated',
+    field: 'catalogInfoYaml.lastUpdated',
     type: 'string',
     align: 'left',
   },

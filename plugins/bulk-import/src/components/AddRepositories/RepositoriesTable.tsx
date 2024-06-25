@@ -1,8 +1,7 @@
 import * as React from 'react';
-import { useEffect, useMemo } from 'react';
-import { useAsync } from 'react-use';
+import { useEffect } from 'react';
 
-import { identityApiRef, useApi } from '@backstage/core-plugin-api';
+import { Progress, WarningPanel } from '@backstage/core-components';
 
 import { makeStyles } from '@material-ui/core';
 import Table from '@mui/material/Table';
@@ -13,16 +12,16 @@ import TablePagination from '@mui/material/TablePagination';
 import TableRow from '@mui/material/TableRow';
 import { useFormikContext } from 'formik';
 
-import { getDataForRepositories, mockData } from '../../mocks/mockData';
+import { useRepositories } from '../../hooks';
 import {
   AddRepositoriesData,
   AddRepositoriesFormValues,
   Order,
   RepositorySelection,
   RepositoryStatus,
+  SelectedRepository,
 } from '../../types';
 import {
-  createOrganizationData,
   filterSelectedForActiveDrawer,
   getComparator,
   getNewOrgsData,
@@ -69,22 +68,18 @@ export const RepositoriesTable = ({
   page?: number;
   setPage?: (page: number) => void;
   showOrganizations?: boolean;
-  drawerOrganization?: AddRepositoriesData;
-  updateSelectedReposInDrawer?: (ids: number[]) => void;
+  drawerOrganization?: string;
+  updateSelectedReposInDrawer?: (ids: SelectedRepository[]) => void;
 }) => {
   const classes = useStyles();
-  const identityApi = useApi(identityApiRef);
-  const { value: user } = useAsync(async () => {
-    const identityRef = await identityApi.getBackstageIdentity();
-    return identityRef.userEntityRef;
-  });
+
   const { setFieldValue, values } =
     useFormikContext<AddRepositoriesFormValues>();
   const [order, setOrder] = React.useState<Order>('asc');
   const [orderBy, setOrderBy] = React.useState<string>(
     showOrganizations ? 'repoName' : 'orgName',
   );
-  const [selected, setSelected] = React.useState<number[]>([]);
+  const [selected, setSelected] = React.useState<SelectedRepository[]>([]);
 
   const [rowsPerPage, setRowsPerPage] = React.useState(5);
   const [tableData, setTableData] = React.useState<AddRepositoriesData[]>([]);
@@ -94,16 +89,19 @@ export const RepositoriesTable = ({
   const [localPage, setLocalPage] = React.useState(page || 0);
   const [drawerPage, setDrawerPage] = React.useState(0);
 
-  const reposData = useMemo(() => {
-    return getDataForRepositories(user || '');
-  }, [user]);
+  const { loading, data, error } = useRepositories(
+    showOrganizations,
+    drawerOrganization,
+  );
+
+  const reposData = React.useMemo(() => data.repositories, [data.repositories]);
   const [orgsData, setOrgsData] = React.useState<AddRepositoriesData[]>([]);
 
-  const orgReposData = drawerOrganization?.repositories;
+  // const orgReposData = drawerOrganization?.repositories;
 
   useEffect(() => {
-    setOrgsData(createOrganizationData(mockData(user || '')));
-  }, [user]);
+    setOrgsData(data.organizations);
+  }, [data.organizations]);
 
   useEffect(() => {
     setLocalPage(page || 0);
@@ -119,22 +117,24 @@ export const RepositoriesTable = ({
 
   useEffect(() => {
     if (drawerOrganization) {
-      const selectedOrgRepoIds = Object.values(values.repositories).map(
-        r => r.id,
-      );
+      const selectedOrgRepoIds = Object.values(values.repositories)
+        .map(r =>
+          r.id ? { repoId: r.id, orgName: r.orgName as string } : null,
+        )
+        .filter(r => r) as SelectedRepository[];
       setSelected(selectedOrgRepoIds);
     }
   }, [drawerOrganization, values?.repositories]);
 
   useEffect(() => {
-    if (drawerOrganization) {
-      setTableData(orgReposData || []);
-    } else {
-      setTableData(showOrganizations ? orgsData : reposData);
-    }
+    // if (drawerOrganization) {
+    //   setTableData(orgReposData || []);
+    // } else {
+    setTableData(showOrganizations ? orgsData : reposData);
+    // }
   }, [
-    drawerOrganization,
-    orgReposData,
+    // drawerOrganization,
+    // orgReposData,
     reposData,
     orgsData,
     showOrganizations,
@@ -145,17 +145,19 @@ export const RepositoriesTable = ({
 
     if (searchString) {
       const f = searchString.toUpperCase();
-      filteredRows = filteredRows.filter((addRepoData: AddRepositoriesData) => {
-        const n = (
-          values.repositoryType === RepositorySelection.Repository ||
-          drawerOrganization
-            ? addRepoData.repoName
-            : addRepoData.orgName
-        )?.toUpperCase();
-        return n?.includes(f);
-      });
+      filteredRows = filteredRows?.filter(
+        (addRepoData: AddRepositoriesData) => {
+          const n = (
+            values.repositoryType === RepositorySelection.Repository ||
+            drawerOrganization
+              ? addRepoData.repoName
+              : addRepoData.orgName
+          )?.toUpperCase();
+          return n?.includes(f);
+        },
+      );
     }
-    filteredRows = [...filteredRows].sort(
+    filteredRows = [...(filteredRows ? filteredRows : [])]?.sort(
       getComparator(order, orderBy, showOrganizations),
     );
 
@@ -180,15 +182,13 @@ export const RepositoriesTable = ({
   };
 
   const updateSelectedRepositories = React.useCallback(
-    (data: AddRepositoriesData[], newSelected: number[]) => {
-      setFieldValue(
-        'repositories',
-        updateWithNewSelectedRepositories(
-          data,
-          values.repositories,
-          newSelected,
-        ),
+    (repoData: AddRepositoriesData[], newSelected: SelectedRepository[]) => {
+      const x = updateWithNewSelectedRepositories(
+        repoData,
+        values.repositories,
+        newSelected,
       );
+      setFieldValue('repositories', x);
     },
     [setFieldValue, values],
   );
@@ -198,8 +198,8 @@ export const RepositoriesTable = ({
         // Select all repos that don't have the status 'Exists', set added repos id to -1
         const newSelected = filteredData.reduce(
           (acc, repo) => {
-            if (repo.catalogInfoYaml?.status !== RepositoryStatus.Exists) {
-              acc.push(repo.id);
+            if (repo.catalogInfoYaml?.status !== RepositoryStatus.ADDED) {
+              acc.push({ repoId: repo.id, orgName: repo.orgName as string });
             }
             return acc;
           },
@@ -210,7 +210,12 @@ export const RepositoriesTable = ({
         updateSelectedReposInDrawer(uniqueSelected);
       } else {
         // Deselect all
-        const deselectedIds = new Set(filteredData.map(repo => repo.id));
+        const deselectedIds = new Set(
+          filteredData.map(repo => ({
+            repoId: repo.id,
+            orgName: repo.orgName as string,
+          })),
+        );
         const newSelected = selected.filter(id => !deselectedIds.has(id));
 
         setSelected(newSelected);
@@ -223,16 +228,16 @@ export const RepositoriesTable = ({
       // Select all valid repos
       const newSelected = filteredData
         .map(n => {
-          if (n.catalogInfoYaml?.status !== RepositoryStatus.Exists) {
+          if (n.catalogInfoYaml?.status !== RepositoryStatus.ADDED) {
             setFieldValue(
               `repositories.${n.repoName}.catalogInfoYaml.status`,
               RepositoryStatus.Ready,
             );
-            return n.id;
+            return { repoId: n.id, orgName: n.orgName as string };
           }
-          return -1;
+          return null;
         })
-        .filter(d => d);
+        .filter(d => d) as SelectedRepository[];
       setSelected(newSelected);
       updateSelectedRepositories(filteredData, newSelected);
       const newOrgsData = orgsData.map(org => {
@@ -241,7 +246,7 @@ export const RepositoriesTable = ({
           selectedRepositories:
             (org.repositories
               ?.map(repo => {
-                if (repo.catalogInfoYaml?.status !== RepositoryStatus.Exists) {
+                if (repo.catalogInfoYaml?.status !== RepositoryStatus.ADDED) {
                   return {
                     ...repo,
                     catalogInfoYaml: {
@@ -276,7 +281,7 @@ export const RepositoriesTable = ({
     }
   };
 
-  const updateSelection = (newSelected: number[]) => {
+  const updateSelection = (newSelected: SelectedRepository[]) => {
     setSelected(newSelected);
 
     if (drawerOrganization && updateSelectedReposInDrawer) {
@@ -288,14 +293,21 @@ export const RepositoriesTable = ({
     }
   };
 
-  const handleClick = (_event: React.MouseEvent, id: number) => {
-    const newSelected = selected.includes(id)
-      ? selected.filter(selId => selId !== id)
+  const handleClick = (_event: React.MouseEvent, id: SelectedRepository) => {
+    const newSelected = selected.find(
+      (sel: SelectedRepository) => sel.repoId === id.repoId,
+    )
+      ? selected.filter(selId => selId.repoId !== id.repoId)
       : [...selected, id];
     updateSelection(newSelected);
     // handle non drawer selection click
     if (!drawerOrganization) {
-      const newOrgsData = getNewOrgsData(orgsData, reposData, newSelected, id);
+      const newOrgsData = getNewOrgsData(
+        orgsData,
+        reposData,
+        newSelected,
+        id.repoId,
+      );
       setOrgsData(newOrgsData);
     }
   };
@@ -326,7 +338,7 @@ export const RepositoriesTable = ({
     }
   };
 
-  const isSelected = (id: number) => selected.indexOf(id) !== -1;
+  const isSelected = (id: string) => !!selected.find(sel => sel.repoId === id);
   const effectivePage = drawerOrganization ? drawerPage : page || 0;
   // Avoid a layout jump when reaching the last page with empty rows.
   const emptyRows =
@@ -352,7 +364,7 @@ export const RepositoriesTable = ({
   }, [setIsOpen]);
 
   const handleUpdatesFromDrawer = React.useCallback(
-    (drawerSelected: number[], drawerOrgId: number) => {
+    (drawerSelected: SelectedRepository[], drawerOrgId: string) => {
       if (drawerSelected) {
         setSelected(drawerSelected);
         updateSelectedRepositories(reposData, drawerSelected);
@@ -374,21 +386,17 @@ export const RepositoriesTable = ({
   );
 
   const selectedForActiveDrawer = React.useMemo(
-    () =>
-      filterSelectedForActiveDrawer(
-        drawerOrganization?.repositories || [],
-        selected,
-      ),
-    [drawerOrganization?.repositories, selected],
+    () => filterSelectedForActiveDrawer(tableData || [], selected),
+    [tableData, selected],
   );
 
   const getRowCount = () => {
     if (drawerOrganization) {
-      return orgReposData?.filter(
-        r => r.catalogInfoYaml?.status !== RepositoryStatus.Exists,
-      ).length;
+      return reposData?.filter(
+        r => r.catalogInfoYaml?.status !== RepositoryStatus.ADDED,
+      )?.length;
     }
-    return tableData.length;
+    return tableData?.length;
   };
 
   const ariaLabel = () => {
@@ -400,97 +408,117 @@ export const RepositoriesTable = ({
     }
     return 'repositories-table';
   };
+  if (loading)
+    return (
+      <div data-testid="repositories-loading">
+        <Progress />
+      </div>
+    );
 
   return (
     <>
       <TableContainer sx={{ padding: '0 24px' }}>
-        <Table
-          sx={{ minWidth: 750 }}
-          aria-labelledby={ariaLabel()}
-          size="small"
-          data-testid={ariaLabel()}
-        >
-          <RepositoriesHeader
-            numSelected={
-              drawerOrganization
-                ? selectedForActiveDrawer.length
-                : selected.length
-            }
-            order={order}
-            orderBy={orderBy}
-            onSelectAllClick={handleSelectAllClick}
-            onRequestSort={handleRequestSort}
-            rowCount={getRowCount() || 0}
-            showOrganizations={drawerOrganization ? false : showOrganizations}
-            isRepoSelectDrawer={!!drawerOrganization}
-          />
-          {visibleRows?.length > 0 ? (
-            <TableBody>
-              {visibleRows.map(row => {
-                const isItemSelected = isSelected(row.id);
+        {error && Object.keys(error) ? (
+          <div style={{ paddingBottom: '16px' }}>
+            <WarningPanel
+              message={error.message}
+              title={error.title}
+              severity="error"
+            />
+          </div>
+        ) : (
+          <Table
+            sx={{ minWidth: 750 }}
+            aria-labelledby={ariaLabel()}
+            size="small"
+            data-testid={ariaLabel()}
+          >
+            <RepositoriesHeader
+              numSelected={
+                drawerOrganization
+                  ? selectedForActiveDrawer.length
+                  : selected.length
+              }
+              order={order}
+              orderBy={orderBy}
+              onSelectAllClick={handleSelectAllClick}
+              onRequestSort={handleRequestSort}
+              rowCount={getRowCount() || 0}
+              showOrganizations={drawerOrganization ? false : showOrganizations}
+              isRepoSelectDrawer={!!drawerOrganization}
+            />
+            {visibleRows?.length > 0 ? (
+              <TableBody>
+                {visibleRows.map(row => {
+                  const isItemSelected = isSelected(row.id);
+                  const selectedReposFromOrg =
+                    Object.values(values?.repositories)?.filter(
+                      repo =>
+                        selected.find(sel => sel.repoId === repo.id) &&
+                        repo.orgName === row.orgName,
+                    ) || [];
+                  const alreadyAddedCount =
+                    Object.values(values?.repositories)?.reduce(
+                      (count, repo) =>
+                        count +
+                        (repo.catalogInfoYaml?.status === RepositoryStatus.ADDED
+                          ? 1
+                          : 0),
+                      0,
+                    ) || 0;
 
-                const selectedReposFromOrg =
-                  row.repositories?.filter(repo =>
-                    selected.includes(repo.id),
-                  ) || [];
-                const alreadyAddedCount =
-                  row.repositories?.reduce(
-                    (count, repo) =>
-                      count +
-                      (repo.catalogInfoYaml?.status === RepositoryStatus.Exists
-                        ? 1
-                        : 0),
-                    0,
-                  ) || 0;
-                const orgData = {
-                  ...row,
-                  selectedRepositories: selectedReposFromOrg,
-                };
-                return showOrganizations ? (
-                  <OrganizationTableRow
-                    key={row.id}
-                    onOrgRowSelected={handleOrgRowSelected}
-                    data={orgData}
-                    alreadyAdded={alreadyAddedCount}
-                  />
-                ) : (
-                  <RepositoryTableRow
-                    key={row.id}
-                    handleClick={handleClick}
-                    isItemSelected={isItemSelected}
-                    data={row}
-                    selectedRepositoryStatus={row.catalogInfoYaml?.status || ''}
-                    isDrawer={!!drawerOrganization}
-                  />
-                );
-              })}
-              {emptyRows > 0 && (
-                <TableRow
-                  style={{
-                    height: 55 * emptyRows,
-                  }}
-                >
-                  <TableCell />
-                </TableRow>
-              )}
-            </TableBody>
-          ) : (
-            <tbody>
-              <tr>
-                <td colSpan={RepositoriesColumnHeader.length}>
-                  <div
-                    data-testid="no-repositories-found"
-                    className={classes.empty}
+                  const orgRowData = {
+                    ...row,
+                    selectedRepositories: selectedReposFromOrg,
+                  };
+                  return showOrganizations ? (
+                    <OrganizationTableRow
+                      key={row.id}
+                      onOrgRowSelected={handleOrgRowSelected}
+                      data={orgRowData}
+                      alreadyAdded={alreadyAddedCount}
+                    />
+                  ) : (
+                    <RepositoryTableRow
+                      key={row.id}
+                      handleClick={handleClick}
+                      isItemSelected={isItemSelected}
+                      data={row}
+                      // selectedRepositoryStatus={
+                      //   row.catalogInfoYaml?.status || ''
+                      // }
+                      isDrawer={!!drawerOrganization}
+                    />
+                  );
+                })}
+                {emptyRows > 0 && (
+                  <TableRow
+                    style={{
+                      height: 55 * emptyRows,
+                    }}
                   >
-                    No records found
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          )}
-        </Table>
+                    <TableCell />
+                  </TableRow>
+                )}
+              </TableBody>
+            ) : (
+              <tbody>
+                <tr>
+                  <td colSpan={RepositoriesColumnHeader.length}>
+                    <div
+                      data-testid="no-repositories-found"
+                      className={classes.empty}
+                    >
+                      No records found
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            )}
+          </Table>
+        )}
       </TableContainer>
-      {!isOpen && (
+      {!isOpen && tableData?.length > 0 && (
         <TablePagination
           rowsPerPageOptions={[
             { value: 5, label: '5 rows' },

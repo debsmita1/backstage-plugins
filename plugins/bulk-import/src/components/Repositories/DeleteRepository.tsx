@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 
-import { IconButton, Tooltip } from '@material-ui/core';
-import Delete from '@mui/icons-material/Delete';
-import { useFormikContext } from 'formik';
+import { useApi } from '@backstage/core-plugin-api';
 
-import { AddRepositoriesData, AddRepositoriesFormValues } from '../../types';
+import Delete from '@mui/icons-material/Delete';
+import IconButton from '@mui/material/IconButton';
+import Tooltip from '@mui/material/Tooltip';
+
+import { bulkImportApiRef } from '../../api/BulkImportBackendClient';
+import { AddRepositoriesData } from '../../types';
 import DeleteRepositoryDialog from './DeleteRepositoryDialog';
 
 type DeleteRepositoryProps = {
@@ -13,13 +16,18 @@ type DeleteRepositoryProps = {
 
 const DeleteRepository = ({ data }: DeleteRepositoryProps) => {
   const [open, setOpen] = useState(false);
-  const { values, setFieldValue } =
-    useFormikContext<AddRepositoriesFormValues>();
-  const handleClickRemove = () => {
-    const newRepositories = values.repositories;
-    if (data.repoName) {
-      delete newRepositories[data.repoName];
-      setFieldValue('repositories', newRepositories);
+  const [error, setError] = React.useState<string>('');
+  const bulkImportApi = useApi(bulkImportApiRef);
+  const handleClickRemove = async () => {
+    const value = await bulkImportApi.removeRepository(
+      data.repoUrl as string,
+      data.defaultBranch,
+    );
+    console.log('!!!!deletevalue ', value);
+    if (value?.error) {
+      setError(`Unable to remove repository. ${value?.error.message}`);
+    } else {
+      setOpen(false);
     }
   };
 
@@ -40,6 +48,7 @@ const DeleteRepository = ({ data }: DeleteRepositoryProps) => {
         <DeleteRepositoryDialog
           open={open}
           repository={data}
+          error={error}
           closeDialog={() => setOpen(false)}
           removeRepository={handleClickRemove}
         />

@@ -1,6 +1,8 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { Content, Header, Page } from '@backstage/core-components';
+import { useApi } from '@backstage/core-plugin-api';
 
 import { useTheme } from '@material-ui/core';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -8,8 +10,11 @@ import Accordion from '@mui/material/Accordion';
 import AccordionDetails from '@mui/material/AccordionDetails';
 import AccordionSummary from '@mui/material/AccordionSummary';
 import Typography from '@mui/material/Typography';
-import { Formik } from 'formik';
+import { Formik, FormikHelpers } from 'formik';
+import * as yaml from 'yaml';
 
+import { bulkImportApiRef } from '../../api/BulkImportBackendClient';
+import { ImportJobResponse } from '../../api/response-types';
 import {
   AddRepositoriesFormValues,
   ApprovalTool,
@@ -20,10 +25,61 @@ import { Illustrations } from './Illustrations';
 
 export const AddRepositoriesPage = () => {
   const theme = useTheme();
+  const navigate = useNavigate();
   const initialValues: AddRepositoriesFormValues = {
     repositoryType: RepositorySelection.Repository,
     repositories: {},
     approvalTool: ApprovalTool.Git,
+  };
+
+  const bulkImportApi = useApi(bulkImportApiRef);
+
+  const handleSubmit = async (
+    values: AddRepositoriesFormValues,
+    formikHelpers: FormikHelpers<AddRepositoriesFormValues>,
+  ) => {
+    console.log('!!!!values  ', values);
+    const importRepositories = Object.values(values.repositories).reduce(
+      (acc: any[], repo) => {
+        acc.push({
+          approvalTool: values.approvalTool.toLocaleUpperCase(),
+          catalogEntityName: repo.catalogInfoYaml?.prTemplate.componentName,
+          repository: {
+            url: repo.repoUrl,
+            name: repo.repoName,
+            organization: repo.orgName,
+            defaultBranch: repo.defaultBranch,
+          },
+          catalogInfoContent: yaml.stringify(
+            repo.catalogInfoYaml?.prTemplate.yaml,
+            null,
+            2,
+          ),
+          github: {
+            pullRequest: {
+              title: repo.catalogInfoYaml?.prTemplate.prTitle,
+              body: repo.catalogInfoYaml?.prTemplate.prDescription,
+            },
+          },
+        });
+        return acc;
+      },
+      [],
+    );
+
+    bulkImportApi
+      .createImportJobs(importRepositories, true)
+      .then(async (response: ImportJobResponse[]) => {
+        await bulkImportApi.createImportJobs(importRepositories);
+        // if (response.errors.length > 0 === 'Successful') {
+        //   formikHelpers.setSubmitting(true);
+        //   await bulkImportApi.createImportJobs(importRepositories);
+        //   navigate(`../bulk-import/repositories`);
+        // }
+      })
+      .catch(err => {
+        console.log('!!!!!!err ', err);
+      });
   };
 
   return (
@@ -94,7 +150,7 @@ export const AddRepositoriesPage = () => {
         <Formik
           initialValues={initialValues}
           enableReinitialize
-          onSubmit={async (_values: AddRepositoriesFormValues) => {}}
+          onSubmit={handleSubmit}
         >
           <AddRepositoriesForm />
         </Formik>

@@ -93,12 +93,7 @@ export const PreviewFileSidebar = ({
   const initializePullRequest = React.useCallback(() => {
     const newPullRequestData: PullRequestPreviewData = {};
 
-    if (
-      data?.repositories?.length &&
-      data?.repositories?.length > 0 &&
-      data?.selectedRepositories?.length &&
-      data.selectedRepositories?.length > 0
-    ) {
+    if (data?.selectedRepositories && data.selectedRepositories?.length > 0) {
       data.selectedRepositories.forEach(repo => {
         if (
           repo.repoName &&
@@ -240,6 +235,7 @@ export const PreviewFile = ({
     });
     setSidebarOpen(false);
   };
+
   return (
     <>
       <span>

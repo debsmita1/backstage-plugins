@@ -1,33 +1,32 @@
 import React from 'react';
 
+import { Progress } from '@backstage/core-components';
+
 import { useFormikContext } from 'formik';
 
 import {
   AddRepositoriesData,
   AddRepositoriesFormValues,
   RepositorySelection,
-  RepositoryStatus,
 } from '../../types';
+import { getImportStatus } from '../../utils/repository-utils';
 import { PreviewFile } from '../PreviewFile/PreviewFile';
 
 export const CatalogInfoStatus = ({
   data,
   isItemSelected,
   alreadyAdded,
+  isLoading,
   isDrawer,
 }: {
   data: AddRepositoriesData;
+  isLoading?: boolean;
   alreadyAdded?: number;
   isItemSelected?: boolean;
   isDrawer?: boolean;
 }) => {
   const { values } = useFormikContext<AddRepositoriesFormValues>();
-  if (data.catalogInfoYaml?.status === RepositoryStatus.Exists) {
-    return <span style={{ color: 'grey' }}>Repository already added</span>;
-  }
-  if (isDrawer) {
-    return null;
-  }
+
   const isSelected =
     isItemSelected ||
     (data.selectedRepositories && data.selectedRepositories.length > 0);
@@ -37,9 +36,30 @@ export const CatalogInfoStatus = ({
         data.repositories?.length
       : !!isItemSelected;
 
-  if (isSelected || allSelected) {
+  if (!isDrawer && (isSelected || allSelected)) {
     return <PreviewFile data={data} repositoryType={values.repositoryType} />;
   }
 
-  return <span>{RepositoryStatus.NotGenerated}</span>;
+  if (!isDrawer && isLoading) {
+    return <Progress />;
+  }
+
+  if (
+    values?.repositories?.[data.repoName as string]?.catalogInfoYaml?.status
+  ) {
+    return (
+      <span style={{ color: 'grey' }}>
+        {getImportStatus(
+          values?.repositories?.[data.repoName as string]?.catalogInfoYaml
+            ?.status as string,
+        )}
+      </span>
+    );
+  }
+
+  if (isDrawer) {
+    return null;
+  }
+
+  return <span>Not Generated</span>;
 };
