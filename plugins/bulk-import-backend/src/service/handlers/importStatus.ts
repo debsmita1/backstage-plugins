@@ -58,18 +58,21 @@ async function getImportStatusWithCheckerFn(
   catalogExistenceCheckFn: (catalogUrl: string) => Promise<boolean>,
   defaultBranch?: string,
 ): Promise<Components.Schemas.ImportStatus> {
-  const catalogUrl = catalogInfoGenerator.getCatalogUrl(repoUrl, defaultBranch);
-  if (await catalogExistenceCheckFn(catalogUrl)) {
-    return 'ADDED';
-  }
   // Check to see if there are any PR
   const openImportPr = await githubApiService.findImportOpenPr(logger, {
     repoUrl,
   });
-  if (openImportPr.prUrl) {
-    return 'WAIT_PR_APPROVAL';
+  if (!openImportPr.prUrl) {
+    if (
+      await catalogExistenceCheckFn(
+        catalogInfoGenerator.getCatalogUrl(repoUrl, defaultBranch),
+      )
+    ) {
+      return 'ADDED';
+    }
+    return null;
   }
-  return null;
+  return 'WAIT_PR_APPROVAL';
 }
 
 /**

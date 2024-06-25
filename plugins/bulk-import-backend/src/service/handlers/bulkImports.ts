@@ -48,15 +48,6 @@ export async function findAllImports(
         break;
       }
     }
-    if (exists) {
-      result.push({
-        id: repo.id,
-        status: 'ADDED',
-        repository: repo,
-        approvalTool: 'GIT',
-      });
-      continue;
-    }
     const errors: string[] = [];
     try {
       // Check to see if there are any PR
@@ -64,6 +55,14 @@ export async function findAllImports(
         repoUrl: repo.url,
       });
       if (!openImportPr.prUrl) {
+        if (exists) {
+          result.push({
+            id: repo.id,
+            status: 'ADDED',
+            repository: repo,
+            approvalTool: 'GIT',
+          });
+        }
         // No import PR
         continue;
       }
@@ -189,6 +188,19 @@ For more information, read an [overview of the Backstage software catalog](https
           throw error;
         }
         // Location already exists, which is fine
+      }
+
+      if (prToRepo.hasChanges === false) {
+        // PR created but with no changes compared to the base branch
+        result.push({
+          status: 'ADDED',
+          repository: {
+            url: req.repository.url,
+            name: gitUrl.name,
+            organization: gitUrl.organization,
+          },
+        } as Components.Schemas.Import);
+        continue;
       }
 
       result.push({

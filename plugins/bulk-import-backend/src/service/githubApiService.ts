@@ -418,6 +418,7 @@ export class GithubApiService {
   ): Promise<{
     prUrl?: string;
     prNumber?: number;
+    hasChanges?: boolean;
     errors?: string[];
   }> {
     const ghConfig = this.integrations.github.byUrl(input.repoUrl)?.config;
@@ -537,10 +538,36 @@ export class GithubApiService {
           head: branchName,
           base: repoData.data.default_branch,
         });
+        const prNum = pullRequestResponse.data.number;
+
+        // Check if PR has actual file changes - if no changes, it means that there is no diff compared to the base branch, so the PR can be closed.
+        const prFiles = await octo.rest.pulls.listFiles({
+          owner,
+          repo,
+          pull_number: prNum,
+          page: 1,
+          per_page: 1,
+        });
+        const hasChanges = prFiles.data.length > 0;
+        if (!hasChanges) {
+          await octo.rest.issues.createComment({
+            owner,
+            repo,
+            issue_number: prNum,
+            body: `Closing this PR because it contains no additional change compared to the base branch.`,
+          });
+          await octo.rest.pulls.update({
+            owner,
+            repo,
+            pull_number: prNum,
+            state: 'closed',
+          });
+        }
 
         return {
           prNumber: pullRequestResponse.data.number,
           prUrl: pullRequestResponse.data.html_url,
+          hasChanges,
         };
       } catch (e: any) {
         logger.warn(`Couldn't create PR in ${input.repoUrl}: ${e}`);
