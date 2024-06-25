@@ -6,6 +6,7 @@ All URIs are relative to *http://localhost*
 |------------- | ------------- | -------------|
 | [**createImportJobs**](ImportApi.md#createImportJobs) | **POST** /imports | Submit Import Jobs |
 | [**findAllImports**](ImportApi.md#findAllImports) | **GET** /imports | Fetch Import Jobs |
+| [**findImportStatusByRepo**](ImportApi.md#findImportStatusByRepo) | **GET** /import/by-repo | Get Import Status by repository |
 
 
 <a name="createImportJobs"></a>
@@ -49,6 +50,32 @@ Fetch Import Jobs
 ### Return type
 
 [**List**](../Models/Import.md)
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+<a name="findImportStatusByRepo"></a>
+# **findImportStatusByRepo**
+> Import findImportStatusByRepo(repo, defaultBranch)
+
+Get Import Status by repository
+
+### Parameters
+
+|Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **repo** | **String**| the full URL to the repo | [optional] [default to null] |
+| **defaultBranch** | **String**| the name of the default branch | [optional] [default to main] |
+
+### Return type
+
+[**Import**](../Models/Import.md)
 
 ### Authorization
 

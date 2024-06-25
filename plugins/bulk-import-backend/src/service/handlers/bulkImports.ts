@@ -41,13 +41,6 @@ export async function findAllImports(
       repo.url,
       repo.defaultBranch,
     );
-    let exists = false;
-    for (const loc of catalogLocations) {
-      if (loc === catalogUrl) {
-        exists = true;
-        break;
-      }
-    }
     const errors: string[] = [];
     try {
       // Check to see if there are any PR
@@ -55,6 +48,13 @@ export async function findAllImports(
         repoUrl: repo.url,
       });
       if (!openImportPr.prUrl) {
+        let exists = false;
+        for (const loc of catalogLocations) {
+          if (loc === catalogUrl) {
+            exists = true;
+            break;
+          }
+        }
         if (exists) {
           result.push({
             id: repo.id,
@@ -233,6 +233,69 @@ For more information, read an [overview of the Backstage software catalog](https
 
   return {
     statusCode: 202,
+    responseBody: result,
+  };
+}
+
+export async function findImportStatusByRepo(
+  logger: Logger,
+  githubApiService: GithubApiService,
+  catalogInfoGenerator: CatalogInfoGenerator,
+  repoUrl: string,
+  defaultBranch?: string,
+): Promise<HandlerResponse<Components.Schemas.Import>> {
+  logger.debug(`Getting bulk import job status for ${repoUrl}..`);
+
+  const errors: string[] = [];
+  const result = {
+    id: repoUrl,
+    repository: {},
+    approvalTool: 'GIT',
+    status: null,
+  } as Components.Schemas.Import;
+  try {
+    // Check to see if there are any PR
+    const openImportPr = await githubApiService.findImportOpenPr(logger, {
+      repoUrl: repoUrl,
+    });
+    if (!openImportPr.prUrl) {
+      const catalogLocations =
+        await catalogInfoGenerator.listCatalogUrlLocations();
+      const catalogUrl = catalogInfoGenerator.getCatalogUrl(
+        repoUrl,
+        defaultBranch,
+      );
+      let exists = false;
+      for (const loc of catalogLocations) {
+        if (loc === catalogUrl) {
+          exists = true;
+          break;
+        }
+      }
+      if (exists) {
+        result.status = 'ADDED';
+      }
+      // No import PR
+      return {
+        statusCode: 200,
+        responseBody: result,
+      };
+    }
+    result.status = 'WAIT_PR_APPROVAL';
+    result.github = {
+      pullRequest: {
+        number: openImportPr.prNum,
+        url: openImportPr.prUrl,
+      },
+    };
+  } catch (error: any) {
+    errors.push(error.message);
+    result.status = 'PR_ERROR';
+    result.errors = errors;
+  }
+
+  return {
+    statusCode: 200,
     responseBody: result,
   };
 }

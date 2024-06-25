@@ -175,6 +175,21 @@ declare namespace Paths {
             export type $500 = /* Repository List */ Components.Schemas.RepositoryList;
         }
     }
+    namespace FindImportStatusByRepo {
+        namespace Parameters {
+            export type DefaultBranch = string;
+            export type Repo = string;
+        }
+        export interface QueryParameters {
+            repo?: Parameters.Repo;
+            defaultBranch?: Parameters.DefaultBranch;
+        }
+        namespace Responses {
+            export type $200 = /* Import Job */ Components.Schemas.Import;
+            export interface $500 {
+            }
+        }
+    }
     namespace Ping {
         namespace Responses {
             export interface $200 {
@@ -217,6 +232,14 @@ export interface OperationMethods {
     data?: Paths.CreateImportJobs.RequestBody,
     config?: AxiosRequestConfig  
   ): OperationResponse<Paths.CreateImportJobs.Responses.$202>
+  /**
+   * findImportStatusByRepo - Get Import Status by repository
+   */
+  'findImportStatusByRepo'(
+    parameters?: Parameters<Paths.FindImportStatusByRepo.QueryParameters> | null,
+    data?: any,
+    config?: AxiosRequestConfig  
+  ): OperationResponse<Paths.FindImportStatusByRepo.Responses.$200>
 }
 
 export interface PathsDictionary {
@@ -257,6 +280,16 @@ export interface PathsDictionary {
       data?: Paths.CreateImportJobs.RequestBody,
       config?: AxiosRequestConfig  
     ): OperationResponse<Paths.CreateImportJobs.Responses.$202>
+  }
+  ['/import/by-repo']: {
+    /**
+     * findImportStatusByRepo - Get Import Status by repository
+     */
+    'get'(
+      parameters?: Parameters<Paths.FindImportStatusByRepo.QueryParameters> | null,
+      data?: any,
+      config?: AxiosRequestConfig  
+    ): OperationResponse<Paths.FindImportStatusByRepo.Responses.$200>
   }
 }
 

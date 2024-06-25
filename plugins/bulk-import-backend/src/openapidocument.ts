@@ -215,6 +215,59 @@ const OPENAPI = `
           }
         }
       }
+    },
+    "/import/by-repo": {
+      "get": {
+        "operationId": "findImportStatusByRepo",
+        "summary": "Get Import Status by repository",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "Import"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "repo",
+            "description": "the full URL to the repo",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "defaultBranch",
+            "description": "the name of the default branch",
+            "schema": {
+              "type": "string",
+              "default": "main"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Import Job status was determined successfully with no errors",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Import"
+                },
+                "examples": {
+                  "singleImportStatusForRepo": {
+                    "$ref": "#/components/examples/singleImportStatusForRepo"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Generic error"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -470,7 +523,6 @@ const OPENAPI = `
             "id": "bulk-import-id-1",
             "status": "WAIT_PR_APPROVAL",
             "errors": [],
-            "lastUpdatedAt": 1711529803,
             "approvalTool": "GIT",
             "repository": {
               "name": "pet-app",
@@ -488,7 +540,6 @@ const OPENAPI = `
             "id": "bulk-import-id-2",
             "status": "PR_REJECTED",
             "errors": [],
-            "lastUpdatedAt": 1611529803,
             "approvalTool": "GIT",
             "repository": {
               "name": "pet-app-test",
@@ -503,6 +554,26 @@ const OPENAPI = `
             }
           }
         ]
+      },
+      "singleImportStatusForRepo": {
+        "summary": "Single import job status for given repo",
+        "value": {
+          "id": "bulk-import-id-1",
+          "status": "WAIT_PR_APPROVAL",
+          "errors": [],
+          "approvalTool": "GIT",
+          "repository": {
+            "name": "pet-app",
+            "url": "https://github.com/my-org/pet-app",
+            "organization": "my-org"
+          },
+          "github": {
+            "pullRequest": {
+              "url": "https://github.com/my-org/pet-app/pull/1",
+              "number": 1
+            }
+          }
+        }
       },
       "multipleImportRequests": {
         "summary": "Multiple import requests",

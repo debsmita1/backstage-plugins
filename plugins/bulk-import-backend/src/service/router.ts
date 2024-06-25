@@ -46,7 +46,11 @@ import { CatalogInfoGenerator } from '../helpers/catalogInfoGenerator';
 import { Components, Paths } from '../openapi.d';
 import { openApiDocument } from '../openapidocument';
 import { GithubApiService } from './githubApiService';
-import { createImportJobs, findAllImports } from './handlers/bulkImports';
+import {
+  createImportJobs,
+  findAllImports,
+  findImportStatusByRepo,
+} from './handlers/bulkImports';
 import { ping } from './handlers/ping';
 import { findAllRepositories } from './handlers/repositories';
 
@@ -203,6 +207,31 @@ export async function createRouter(
         githubApiService,
         catalogInfoGenerator,
         c.request.requestBody,
+      );
+      return res.status(response.statusCode).json(response.responseBody);
+    },
+  );
+
+  api.register(
+    'findImportStatusByRepo',
+    async (c: Context, req: express.Request, res: express.Response) => {
+      const backstageToken = getBearerTokenFromAuthorizationHeader(
+        req.header('authorization'),
+      );
+      await permissionCheck(permissions, backstageToken);
+      const q: Paths.FindImportStatusByRepo.QueryParameters = Object.assign(
+        {},
+        c.request.query,
+      );
+      if (!q.repo || q.repo.trim().length === 0) {
+        throw new Error('missing or blank parameter');
+      }
+      const response = await findImportStatusByRepo(
+        logger,
+        githubApiService,
+        catalogInfoGenerator,
+        q.repo,
+        q.defaultBranch,
       );
       return res.status(response.statusCode).json(response.responseBody);
     },

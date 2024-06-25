@@ -9,6 +9,7 @@ All URIs are relative to *http://localhost*
 |------------ | ------------- | ------------- | -------------|
 | *ImportApi* | [**createImportJobs**](Apis/ImportApi.md#createimportjobs) | **POST** /imports | Submit Import Jobs |
 *ImportApi* | [**findAllImports**](Apis/ImportApi.md#findallimports) | **GET** /imports | Fetch Import Jobs |
+*ImportApi* | [**findImportStatusByRepo**](Apis/ImportApi.md#findimportstatusbyrepo) | **GET** /import/by-repo | Get Import Status by repository |
 | *ManagementApi* | [**ping**](Apis/ManagementApi.md#ping) | **GET** /ping | Check the health of the Bulk Import backend router |
 | *RepositoryApi* | [**findAllRepositories**](Apis/RepositoryApi.md#findallrepositories) | **GET** /repositories | Fetch Organization Repositories accessible by Backstage Github Integrations |
 
