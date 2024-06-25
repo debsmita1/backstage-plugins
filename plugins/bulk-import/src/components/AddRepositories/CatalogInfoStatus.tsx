@@ -22,7 +22,7 @@ export const CatalogInfoStatus = ({
   isDrawer?: boolean;
 }) => {
   const { values } = useFormikContext<AddRepositoriesFormValues>();
-  if (data.catalogInfoYaml?.status === RepositoryStatus.Exists) {
+  if (data.catalogInfoYaml?.status === RepositoryStatus.ADDED) {
     return <span style={{ color: 'grey' }}>Repository already added</span>;
   }
   if (isDrawer) {
@@ -41,5 +41,5 @@ export const CatalogInfoStatus = ({
     return <PreviewFile data={data} repositoryType={values.repositoryType} />;
   }
 
-  return <span>{RepositoryStatus.NotGenerated}</span>;
+  return <span>Not Generated</span>;
 };

@@ -42,11 +42,11 @@ export const RepositoryTableRow = ({
           disableRipple
           color="primary"
           checked={
-            selectedRepositoryStatus === RepositoryStatus.Exists
+            selectedRepositoryStatus === RepositoryStatus.ADDED
               ? true
               : isItemSelected
           }
-          disabled={selectedRepositoryStatus === RepositoryStatus.Exists}
+          disabled={selectedRepositoryStatus === RepositoryStatus.ADDED}
           onClick={event => handleClick(event, data.id)}
           style={{ padding: '0 12px' }}
         />

@@ -19,6 +19,8 @@ export type PullRequestPreview = {
 };
 export type PullRequestPreviewData = { [name: string]: PullRequestPreview };
 
+export type ImportStatus = 'ADDED' | 'WAIT_PR_APPROVAL' | 'PR_ERROR' | null;
+
 export type AddRepositoriesData = {
   id: number;
   repoName?: string;
@@ -28,7 +30,7 @@ export type AddRepositoriesData = {
   repositories?: AddRepositoriesData[];
   selectedRepositories?: AddRepositoriesData[];
   catalogInfoYaml?: {
-    status: string;
+    status: ImportStatus;
     prTemplate: PullRequestPreview;
   };
 };
@@ -46,10 +48,11 @@ export type AddRepositoriesFormValues = {
 };
 
 export enum RepositoryStatus {
-  Exists = 'Exists',
+  ADDED = 'ADDED',
+  'WAIT_PR_APPROVAL' = 'WAIT_PR_APPROVAL',
   Ready = 'Ready',
-  NotGenerated = 'Not generated',
-  Failed = 'Failed',
+  NotGenerated = 'NotGenerated',
+  'PR_ERROR' = 'PR_ERROR',
 }
 
 export enum RepositorySelection {
