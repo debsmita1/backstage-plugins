@@ -74,7 +74,7 @@ export type GithubRepoFetchError =
 export type GithubRepositoryResponse = {
   repositories: GithubRepository[];
   errors: GithubRepoFetchError[];
-  totalCount: number | undefined;
+  totalCount?: number;
 };
 
 export type AppCredentialFetchResult = AppCredential | AppCredentialError;
