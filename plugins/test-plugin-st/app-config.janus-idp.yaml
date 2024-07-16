@@ -1,0 +1,8 @@
+dynamicPlugins:
+  frontend:
+    janus-idp.backstage-plugin-test-plugin-st:
+      apiFactories: []
+      appIcons: []
+      dynamicRoutes: []
+      mountPoints: []
+      routeBindings: []
