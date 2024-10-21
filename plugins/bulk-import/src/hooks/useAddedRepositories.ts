@@ -35,6 +35,7 @@ export const useAddedRepositories = (
     totalJobs: number;
   };
   error: any;
+  isFetching: boolean;
   refetch: () => void;
 } => {
   const [addedRepositoriesData, setAddedRepositoriesData] = React.useState<{
@@ -79,6 +80,7 @@ export const useAddedRepositories = (
     error,
     isLoading: loading,
     refetch,
+    isFetching,
   } = useQuery(
     ['importJobs', pageNumber, rowsPerPage, debouncedSearch],
     () => fetchAddedRepositories(pageNumber, rowsPerPage, debouncedSearch),
@@ -120,6 +122,7 @@ export const useAddedRepositories = (
       totalJobs: totalImportJobs,
     },
     loaded,
+    isFetching,
     error: {
       ...(error ?? {}),
       ...((value as Response)?.statusText

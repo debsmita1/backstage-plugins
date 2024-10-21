@@ -144,7 +144,7 @@ export const PreviewFileSidebar = ({
           repo.orgName || '',
           repo.repoUrl || '',
           repo.defaultBranch || 'main',
-          repo.catalogInfoYaml?.prTemplate as PullRequestPreview,
+          repo.catalogInfoYaml?.prTemplate!,
         );
       }
     } else {
@@ -154,7 +154,7 @@ export const PreviewFileSidebar = ({
         data.orgName || '',
         data.repoUrl || '',
         data.defaultBranch || 'main',
-        data.catalogInfoYaml?.prTemplate as PullRequestPreview,
+        data.catalogInfoYaml?.prTemplate!,
       );
     }
     setPullRequest(newPullRequestData);

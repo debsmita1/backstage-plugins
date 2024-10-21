@@ -42,6 +42,7 @@ export const RepositoriesList = () => {
     data: importJobs,
     error: errJobs,
     loaded: jobsLoaded,
+    isFetching,
     refetch,
   } = useAddedRepositories(pageNumber + 1, rowsPerPage, debouncedSearch);
 
@@ -108,7 +109,7 @@ export const RepositoriesList = () => {
           Body: () => (
             <AddedRepositoriesTableBody
               error={errJobs}
-              loading={!jobsLoaded}
+              loading={!jobsLoaded && isFetching}
               rows={sortedData}
               emptyRows={emptyRows}
             />
